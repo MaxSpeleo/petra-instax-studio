@@ -238,8 +238,21 @@ $('#heroTitle').oninput=saveUi;$('#heroSubtitle').oninput=saveUi;
 $('#uiPhotoFile').onchange=async e=>{const f=e.target.files?.[0];if(f){$('#heroPhoto').src=await fileData(f);saveUi()}};
 $('#uiBgFile').onchange=async e=>{const f=e.target.files?.[0];if(f){$('#heroBg').style.backgroundImage=`url("${await fileData(f)}")`;$('#heroBg').style.opacity='.35';saveUi()}};
 $('#uiColor').oninput=e=>{document.documentElement.style.setProperty('--accent2',e.target.value);saveUi()};
-function saveUi(){try{localStorage.setItem('petra-instax-ui',JSON.stringify({title:$('#heroTitle').textContent,subtitle:$('#heroSubtitle').textContent,photo:$('#heroPhoto').src,bg:$('#heroBg').style.backgroundImage,bgOpacity:$('#heroBg').style.opacity,color:$('#uiColor').value}))}catch(e){}}
-function loadUi(){try{const u=JSON.parse(localStorage.getItem('petra-instax-ui')||'null');if(!u)return;$('#heroTitle').textContent=u.title||'Petra Foto';$('#heroSubtitle').textContent=u.subtitle||'';if(u.photo)$('#heroPhoto').src=u.photo;if(u.bg){$('#heroBg').style.backgroundImage=u.bg;$('#heroBg').style.opacity=u.bgOpacity||'.35'}if(u.color){$('#uiColor').value=u.color;document.documentElement.style.setProperty('--accent2',u.color)}}catch(e){}}
+function saveUi(){try{
+  const geo={};
+  ['heroPhoto','heroTitle','heroSubtitle','heroBadges'].forEach(id=>{
+    const el=$('#'+id);geo[id]={left:el.style.left,top:el.style.top,width:el.style.width,height:el.style.height,fontSize:el.style.fontSize,position:el.style.position}
+  });
+  localStorage.setItem('petra-instax-ui',JSON.stringify({title:$('#heroTitle').textContent,subtitle:$('#heroSubtitle').textContent,photo:$('#heroPhoto').src,bg:$('#heroBg').style.backgroundImage,bgOpacity:$('#heroBg').style.opacity,color:$('#uiColor').value,geo}))
+}catch(e){}}
+function loadUi(){try{
+  const u=JSON.parse(localStorage.getItem('petra-instax-ui')||'null');if(!u)return;
+  $('#heroTitle').textContent=u.title||'Petra Foto';$('#heroSubtitle').textContent=u.subtitle||'';
+  if(u.photo)$('#heroPhoto').src=u.photo;
+  if(u.bg){$('#heroBg').style.backgroundImage=u.bg;$('#heroBg').style.opacity=u.bgOpacity||'.35'}
+  if(u.color){$('#uiColor').value=u.color;document.documentElement.style.setProperty('--accent2',u.color)}
+  Object.entries(u.geo||{}).forEach(([id,g])=>{const el=$('#'+id);if(!el)return;['left','top','width','height','fontSize','position'].forEach(k=>{if(g[k])el.style[k]=g[k]})})
+}catch(e){}}
 loadUi();
 
 function renderGallery(){
