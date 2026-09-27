@@ -4,8 +4,8 @@ const $$=s=>[...document.querySelectorAll(s)];
 const sheet=$('#sheet'), editor=$('#editor'), editorImg=$('#editorImg'), editorWindow=$('#editorWindow');
 
 const defaults=()=>({
-  src:null,x:0,y:0,zoom:1,rotation:0,flipX:1,
-  brightness:100,contrast:100,saturation:100,warmth:0,
+  src:null,x:0,y:0,zoom:1,rotation:0,flipX:1,flipY:1,
+  brightness:100,contrast:100,saturation:100,warmth:0,vignette:0,sharpness:0,frameStyle:'none',
   preset:'Originale',caption:'',captionSize:12,captionColor:'#3b3535',
   captionAlign:'center',locked:false,width:0,height:0,history:[],future:[]
 });
@@ -32,9 +32,12 @@ function cssFilter(s){
   const c=s.contrast*p.c/100;
   const sat=s.saturation*p.s/100;
   const extraWarm=s.warmth>0?Math.min(45,s.warmth):0;
-  return `brightness(${b}%) contrast(${c}%) saturate(${sat}%) sepia(${Math.max(p.sepia,extraWarm)}%) grayscale(${p.gray}%) hue-rotate(${p.hue+(s.warmth<0?s.warmth*1.4:0)}deg)`;
+  const sharpBoost=1+(s.sharpness||0)/500;
+  return `brightness(${b}%) contrast(${c*sharpBoost}%) saturate(${sat}%) sepia(${Math.max(p.sepia,extraWarm)}%) grayscale(${p.gray}%) hue-rotate(${p.hue+(s.warmth<0?s.warmth*1.4:0)}deg)`;
 }
-function transform(s){return `translate(${s.x}px,${s.y}px) scale(${s.zoom}) rotate(${s.rotation}deg) scaleX(${s.flipX})`}
+function transform(s){return `translate(${s.x}px,${s.y}px) scale(${s.zoom}) rotate(${s.rotation}deg) scale(${s.flipX},${s.flipY||1})`}
+function vignetteStyle(s){return `background:radial-gradient(circle at center,transparent ${Math.max(20,72-(s.vignette||0)*.55)}%,rgba(0,0,0,${(s.vignette||0)/120}) 100%)`}
+function frameClass(s){return s.frameStyle&&s.frameStyle!=='none'?` frame-${s.frameStyle}`:''}
 
 function render(){
   sheet.innerHTML='';
@@ -44,7 +47,7 @@ function render(){
     c.draggable=true;c.dataset.i=i;
     c.innerHTML=`
       <div class="photo-box" data-open="${i}">
-        ${s.src?`<img src="${s.src}" style="transform:${transform(s)};filter:${cssFilter(s)}">`:`<div class="placeholder">TOCCA QUI<br>PER INSERIRE<br>LA FOTO</div>`}
+        ${s.src?`<img src="${s.src}" style="transform:${transform(s)};filter:${cssFilter(s)}"><div class="vignette" style="${vignetteStyle(s)}"></div><div class="frame-overlay${frameClass(s)}"></div>`:`<div class="placeholder">TOCCA QUI<br>PER INSERIRE<br>LA FOTO</div>`}
       </div>
       <input class="mini-caption" data-caption="${i}" value="${esc(s.caption)}" placeholder="data o breve testo"
         style="font-size:${s.captionSize}px;color:${s.captionColor};text-align:${s.captionAlign}" ${s.locked?'readonly':''}>
@@ -56,6 +59,7 @@ function render(){
     sheet.appendChild(c);
   });
   persist();
+  renderGallery();
 }
 function esc(v=''){return v.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function qualityClass(s){
@@ -128,8 +132,10 @@ function openEditor(i){
 function syncEditor(){
   if(current<0)return;const s=slots[current];
   editorImg.src=s.src||'';
-  editorImg.style.transform=transform(s);editorImg.style.filter=cssFilter(s);
-  $('#zoom').value=s.zoom;$('#rotation').value=s.rotation;$('#brightness').value=s.brightness;$('#contrast').value=s.contrast;$('#saturation').value=s.saturation;$('#warmth').value=s.warmth;
+  editorImg.style.transform=transform(s);editorImg.style.filter=editorWindow.classList.contains('show-before')?'none':cssFilter(s);
+  editorWindow.style.setProperty('--vignette',(s.vignette||0)/120);
+  editorWindow.className='instax-window'+frameClass(s)+(editorWindow.classList.contains('show-before')?' show-before':'');
+  $('#zoom').value=s.zoom;$('#rotation').value=s.rotation;$('#brightness').value=s.brightness;$('#contrast').value=s.contrast;$('#saturation').value=s.saturation;$('#warmth').value=s.warmth;$('#vignette').value=s.vignette||0;$('#sharpness').value=s.sharpness||0;$('#frameStyle').value=s.frameStyle||'none';
   $('#captionInput').value=s.caption;$('#captionSize').value=s.captionSize;$('#captionColor').value=s.captionColor;$('#captionInput').style.fontSize=s.captionSize+'px';$('#captionInput').style.color=s.captionColor;$('#captionInput').style.textAlign=s.captionAlign;
   $('#qualityText').textContent=qualityLabel(s);
   $$('.preset').forEach(b=>b.classList.toggle('active',b.dataset.preset===s.preset));
@@ -138,7 +144,7 @@ function bindRange(id,key,parse=Number){
   $(id).addEventListener('pointerdown',pushHistory,{passive:true});
   $(id).addEventListener('input',e=>{slots[current][key]=parse(e.target.value);syncEditor()})
 }
-bindRange('#zoom','zoom',parseFloat);bindRange('#rotation','rotation');bindRange('#brightness','brightness');bindRange('#contrast','contrast');bindRange('#saturation','saturation');bindRange('#warmth','warmth');bindRange('#captionSize','captionSize');
+bindRange('#zoom','zoom',parseFloat);bindRange('#rotation','rotation');bindRange('#brightness','brightness');bindRange('#contrast','contrast');bindRange('#saturation','saturation');bindRange('#warmth','warmth');bindRange('#vignette','vignette');bindRange('#sharpness','sharpness');bindRange('#captionSize','captionSize');
 
 Object.keys(presets).forEach(name=>{
   const b=document.createElement('button');b.type='button';b.className='preset';b.dataset.preset=name;b.textContent=name;
@@ -152,7 +158,10 @@ $$('.tabs button').forEach(b=>b.onclick=()=>{
 $('#rotLeft').onclick=()=>{pushHistory();slots[current].rotation-=90;syncEditor()};
 $('#rotRight').onclick=()=>{pushHistory();slots[current].rotation+=90;syncEditor()};
 $('#flipH').onclick=()=>{pushHistory();slots[current].flipX*=-1;syncEditor()};
-$('#resetTransform').onclick=()=>{pushHistory();Object.assign(slots[current],{x:0,y:0,zoom:1,rotation:0,flipX:1});syncEditor()};
+$('#flipV').onclick=()=>{pushHistory();slots[current].flipY=(slots[current].flipY||1)*-1;syncEditor()};
+$('#beforeAfter').onclick=()=>{editorWindow.classList.toggle('show-before');syncEditor()};
+$('#frameStyle').onchange=e=>{pushHistory();slots[current].frameStyle=e.target.value;syncEditor()};
+$('#resetTransform').onclick=()=>{pushHistory();Object.assign(slots[current],{x:0,y:0,zoom:1,rotation:0,flipX:1,flipY:1});syncEditor()};
 $('#captionInput').addEventListener('input',e=>{slots[current].caption=e.target.value;syncEditor()});
 $('#captionInput').addEventListener('focus',pushHistory,{once:false});
 $('#captionColor').oninput=e=>{slots[current].captionColor=e.target.value;syncEditor()};
@@ -161,7 +170,7 @@ $('#undoBtn').onclick=undo;$('#redoBtn').onclick=redo;
 
 $('#replaceBtn').onclick=()=>$('#replaceFile').click();
 $('#replaceFile').onchange=async e=>{
-  const f=e.target.files?.[0];if(!f)return;pushHistory();const data=await fileData(f);const im=new Image();im.onload=()=>{Object.assign(slots[current],{src:data,width:im.naturalWidth,height:im.naturalHeight,x:0,y:0,zoom:1,rotation:0,flipX:1});syncEditor()};im.src=data;
+  const f=e.target.files?.[0];if(!f)return;pushHistory();const data=await fileData(f);const im=new Image();im.onload=()=>{Object.assign(slots[current],{src:data,width:im.naturalWidth,height:im.naturalHeight,x:0,y:0,zoom:1,rotation:0,flipX:1,flipY:1});syncEditor()};im.src=data;
 };
 $('#duplicateBtn').onclick=()=>{
   const empty=slots.findIndex((s,i)=>i!==current&&!s.src);
@@ -170,6 +179,7 @@ $('#duplicateBtn').onclick=()=>{
 };
 $('#deleteBtn').onclick=()=>{if(confirm('Eliminare questa miniatura?')){slots[current]=defaults();editor.close();render()}};
 $('#saveSlotBtn').onclick=()=>{slots[current].locked=true;editor.close();render()};
+$('#downloadJpgBtn').onclick=async()=>{const blob=await exportCurrentBlob('image/jpeg');downloadBlob(blob,'petra-instax-mini.jpg')};
 $('#shareBtn').onclick=async()=>{
   const blob=await exportCurrentBlob();const file=new File([blob],'petra-instax-mini.png',{type:'image/png'});
   if(navigator.canShare?.({files:[file]})){await navigator.share({files:[file],title:'Petra Instax Mini'})}
@@ -191,7 +201,7 @@ document.addEventListener('keydown',e=>{
   if(changed){e.preventDefault();syncEditor()}else s.history.pop()
 });
 
-async function exportCurrentBlob(){
+async function exportCurrentBlob(type='image/png'){
   const s=slots[current],canvas=document.createElement('canvas');canvas.width=638;canvas.height=1016;
   const ctx=canvas.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);
   const win={x:47,y:59,w:544,h:733};
@@ -200,11 +210,19 @@ async function exportCurrentBlob(){
   ctx.filter=cssFilter(s);
   const base=Math.max(win.w/img.width,win.h/img.height)*s.zoom;
   const w=img.width*base,h=img.height*base;
-  ctx.translate(win.x+win.w/2+s.x*2,win.y+win.h/2+s.y*2);ctx.rotate(s.rotation*Math.PI/180);ctx.scale(s.flipX,1);
+  ctx.translate(win.x+win.w/2+s.x*2,win.y+win.h/2+s.y*2);ctx.rotate(s.rotation*Math.PI/180);ctx.scale(s.flipX,s.flipY||1);
   ctx.drawImage(img,-w/2,-h/2,w,h);ctx.restore();ctx.filter='none';
+  if((s.vignette||0)>0){const g=ctx.createRadialGradient(win.x+win.w/2,win.y+win.h/2,win.w*.18,win.x+win.w/2,win.y+win.h/2,win.w*.68);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,`rgba(0,0,0,${(s.vignette||0)/120})`);ctx.fillStyle=g;ctx.fillRect(win.x,win.y,win.w,win.h)}
+  drawFrame(ctx,s,win);
   ctx.fillStyle=s.captionColor;ctx.font=`${Math.round(s.captionSize*2.3)}px sans-serif`;ctx.textAlign=s.captionAlign==='left'?'left':s.captionAlign==='right'?'right':'center';
   const tx=s.captionAlign==='left'?47:s.captionAlign==='right'?591:319;ctx.fillText(s.caption,tx,900,544);
-  return new Promise(res=>canvas.toBlob(res,'image/png'))
+  return new Promise(res=>canvas.toBlob(res,type,type==='image/jpeg'?.94:undefined))
+}
+function drawFrame(ctx,s,win){
+  if(!s.frameStyle||s.frameStyle==='none')return;
+  ctx.save();ctx.lineWidth=s.frameStyle==='classic'?10:6;
+  ctx.strokeStyle=s.frameStyle==='black'?'#111':s.frameStyle==='soft'?'rgba(255,255,255,.85)':'#f5f0ea';
+  ctx.strokeRect(win.x+ctx.lineWidth/2,win.y+ctx.lineWidth/2,win.w-ctx.lineWidth,win.h-ctx.lineWidth);ctx.restore()
 }
 function loadImage(src){return new Promise((res,rej)=>{const im=new Image();im.onload=()=>res(im);im.onerror=rej;im.src=src})}
 function downloadBlob(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
@@ -223,3 +241,43 @@ $('#uiColor').oninput=e=>{document.documentElement.style.setProperty('--accent2'
 function saveUi(){try{localStorage.setItem('petra-instax-ui',JSON.stringify({title:$('#heroTitle').textContent,subtitle:$('#heroSubtitle').textContent,photo:$('#heroPhoto').src,bg:$('#heroBg').style.backgroundImage,bgOpacity:$('#heroBg').style.opacity,color:$('#uiColor').value}))}catch(e){}}
 function loadUi(){try{const u=JSON.parse(localStorage.getItem('petra-instax-ui')||'null');if(!u)return;$('#heroTitle').textContent=u.title||'Petra Foto';$('#heroSubtitle').textContent=u.subtitle||'';if(u.photo)$('#heroPhoto').src=u.photo;if(u.bg){$('#heroBg').style.backgroundImage=u.bg;$('#heroBg').style.opacity=u.bgOpacity||'.35'}if(u.color){$('#uiColor').value=u.color;document.documentElement.style.setProperty('--accent2',u.color)}}catch(e){}}
 loadUi();
+
+function renderGallery(){
+  const g=$('#gallery'); if(!g)return;
+  g.innerHTML='';
+  const filled=slots.map((s,i)=>({s,i})).filter(x=>x.s.src);
+  $('#galleryCount').textContent=`${filled.length} miniature`;
+  filled.forEach(({s,i})=>{
+    const b=document.createElement('button');b.type='button';b.className='gallery-item';
+    b.innerHTML=`<div class="gallery-thumb"><img src="${s.src}" style="transform:${transform(s)};filter:${cssFilter(s)}"></div><span>${esc(s.caption)||'Miniatura '+(i+1)}</span>`;
+    b.onclick=()=>openEditor(i);g.appendChild(b);
+  });
+}
+
+let uiDrag=null;
+function enableUiVisualEdit(){
+  ['heroPhoto','heroTitle','heroSubtitle','heroBadges'].forEach(id=>{
+    const el=$('#'+id); if(!el)return;
+    el.style.touchAction='none';
+    el.addEventListener('pointerdown',e=>{
+      if(!uiEdit||e.target.isContentEditable)return;
+      uiDrag={el,x:e.clientX,y:e.clientY,left:el.offsetLeft,top:el.offsetTop};
+      el.setPointerCapture(e.pointerId);e.preventDefault();
+    });
+    el.addEventListener('pointermove',e=>{
+      if(!uiDrag||uiDrag.el!==el)return;
+      el.style.position='relative';
+      el.style.left=(uiDrag.left+e.clientX-uiDrag.x)+'px';
+      el.style.top=(uiDrag.top+e.clientY-uiDrag.y)+'px';
+    });
+    el.addEventListener('pointerup',()=>{uiDrag=null;saveUi()});
+    el.addEventListener('wheel',e=>{
+      if(!uiEdit)return;e.preventDefault();
+      const f=e.deltaY<0?1.06:.94;
+      if(id==='heroPhoto'){el.style.width=Math.max(60,el.offsetWidth*f)+'px';el.style.height=Math.max(60,el.offsetHeight*f)+'px'}
+      else{const fs=parseFloat(getComputedStyle(el).fontSize)||16;el.style.fontSize=Math.max(10,fs*f)+'px'}
+      saveUi()
+    },{passive:false});
+  })
+}
+enableUiVisualEdit();
