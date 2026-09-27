@@ -7,7 +7,7 @@ const defaults=()=>({
   src:null,x:0,y:0,zoom:1,rotation:0,flipX:1,flipY:1,
   brightness:100,contrast:100,saturation:100,warmth:0,vignette:0,sharpness:0,frameStyle:'none',
   preset:'Originale',caption:'',captionSize:20,captionColor:'#3b3535',
-  captionAlign:'center',locked:false,width:0,height:0,history:[],future:[]
+  captionAlign:'center',captionFont:'Arial, sans-serif',locked:false,width:0,height:0,history:[],future:[]
 });
 let slots=Array.from({length:N},defaults);
 let current=-1, dragging=false, dragStart=null;
@@ -50,7 +50,7 @@ function render(){
         ${s.src?`<img src="${s.src}" style="transform:${transform(s,.756)};filter:${cssFilter(s)}"><div class="vignette" style="${vignetteStyle(s)}"></div><div class="frame-overlay${frameClass(s)}"></div>`:`<div class="placeholder">TOCCA QUI<br>PER INSERIRE<br>LA FOTO</div>`}
       </div>
       <input class="mini-caption" data-caption="${i}" value="${esc(s.caption)}" placeholder="data o breve testo"
-        style="font-size:${s.captionSize}px;color:${s.captionColor};text-align:${s.captionAlign}" ${s.locked?'readonly':''}>
+        style="font-size:${s.captionSize}px;color:${s.captionColor};text-align:${s.captionAlign};font-family:${s.captionFont||'Arial, sans-serif'}" ${s.locked?'readonly':''}>
       <span class="quality-dot ${qualityClass(s)}" title="${qualityLabel(s)}"></span>
       <div class="card-actions">
         <button data-open="${i}">${s.src?'Modifica':'Foto'}</button>
@@ -141,15 +141,17 @@ function selectEditorTarget(target){
   activateTab(target==='text'?'text':'position');
 }
 editorWindow.addEventListener('click',()=>selectEditorTarget('photo'));
-$('#captionInput').addEventListener('click',()=>selectEditorTarget('text'));
+$('#captionInput').addEventListener('click',()=>{selectEditorTarget('text');setTimeout(()=>$('#captionInput').focus(),0)});
 function syncEditor(){
   if(current<0)return;const s=slots[current];
   editorImg.src=s.src||'';
   editorImg.style.transform=transform(s);editorImg.style.filter=editorWindow.classList.contains('show-before')?'none':cssFilter(s);
   editorWindow.style.setProperty('--vignette',(s.vignette||0)/120);
-  editorWindow.className='instax-window'+frameClass(s)+(editorWindow.classList.contains('show-before')?' show-before':'');
+  const wasSelected=editorWindow.classList.contains('selected-editable');
+  const wasBefore=editorWindow.classList.contains('show-before');
+  editorWindow.className='instax-window'+frameClass(s)+(wasBefore?' show-before':'')+(wasSelected?' selected-editable':'');
   $('#zoom').value=s.zoom;$('#rotation').value=s.rotation;$('#brightness').value=s.brightness;$('#contrast').value=s.contrast;$('#saturation').value=s.saturation;$('#warmth').value=s.warmth;$('#vignette').value=s.vignette||0;$('#sharpness').value=s.sharpness||0;$('#frameStyle').value=s.frameStyle||'none';
-  $('#captionInput').value=s.caption;$('#captionSize').value=s.captionSize;$('#captionColor').value=s.captionColor;$('#captionInput').style.fontSize=s.captionSize+'px';$('#captionInput').style.color=s.captionColor;$('#captionInput').style.textAlign=s.captionAlign;
+  $('#captionInput').value=s.caption;$('#captionSize').value=s.captionSize;$('#captionColor').value=s.captionColor;$('#captionFont').value=s.captionFont||'Arial, sans-serif';$('#captionInput').style.fontSize=s.captionSize+'px';$('#captionInput').style.color=s.captionColor;$('#captionInput').style.textAlign=s.captionAlign;$('#captionInput').style.fontFamily=s.captionFont||'Arial, sans-serif';
   $('#qualityText').textContent=qualityLabel(s);
   $$('.preset').forEach(b=>b.classList.toggle('active',b.dataset.preset===s.preset));
 }
@@ -178,10 +180,18 @@ $('#resetTransform').onclick=()=>{pushHistory();Object.assign(slots[current],{x:
 $('#captionInput').addEventListener('input',e=>{slots[current].caption=e.target.value;syncEditor()});
 $('#captionInput').addEventListener('focus',pushHistory,{once:false});
 $('#captionColor').oninput=e=>{slots[current].captionColor=e.target.value;syncEditor()};
+$('#captionFont').onchange=e=>{pushHistory();slots[current].captionFont=e.target.value;syncEditor()};
 $$('[data-align]').forEach(b=>b.onclick=()=>{pushHistory();slots[current].captionAlign=b.dataset.align;syncEditor()});
 $('#undoBtn').onclick=undo;$('#redoBtn').onclick=redo;
 
 $('#replaceBtn').onclick=()=>$('#replaceFile').click();
+$('#deletePhotoBtn').onclick=()=>{
+  if(!confirm('Eliminare questa foto dalla miniatura?'))return;
+  slots[current]=defaults();
+  persist();
+  editor.close();
+  render();
+};
 $('#replaceFile').onchange=async e=>{
   const f=e.target.files?.[0];if(!f)return;pushHistory();const data=await fileData(f);const im=new Image();im.onload=()=>{Object.assign(slots[current],{src:data,width:im.naturalWidth,height:im.naturalHeight,x:0,y:0,zoom:1,rotation:0,flipX:1,flipY:1});syncEditor()};im.src=data;
 };
@@ -191,6 +201,8 @@ $('#duplicateBtn').onclick=()=>{
   slots[empty]={...defaults(),...snapshot(slots[current]),locked:false,history:[],future:[]};render();alert('Miniatura duplicata.')
 };
 $('#deleteBtn').onclick=()=>{if(confirm('Eliminare questa miniatura?')){slots[current]=defaults();editor.close();render()}};
+editor.addEventListener('close',()=>{if(current>=0){persist();render()}});
+
 $('#saveSlotBtn').onclick=()=>{
   const s=slots[current];
   const maxX=editorWindow.clientWidth*.72;
@@ -198,7 +210,7 @@ $('#saveSlotBtn').onclick=()=>{
   s.x=Math.max(-maxX,Math.min(maxX,s.x||0));
   s.y=Math.max(-maxY,Math.min(maxY,s.y||0));
   s.zoom=Math.max(1,Math.min(3,s.zoom||1));
-  s.locked=true;
+  s.locked=false;
   persist();
   editor.close();
   render();
@@ -276,7 +288,7 @@ async function exportCurrentBlob(type='image/png'){
   ctx.drawImage(img,-w/2,-h/2,w,h);ctx.restore();ctx.filter='none';
   if((s.vignette||0)>0){const g=ctx.createRadialGradient(win.x+win.w/2,win.y+win.h/2,win.w*.18,win.x+win.w/2,win.y+win.h/2,win.w*.68);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,`rgba(0,0,0,${(s.vignette||0)/120})`);ctx.fillStyle=g;ctx.fillRect(win.x,win.y,win.w,win.h)}
   drawFrame(ctx,s,win);
-  ctx.fillStyle=s.captionColor;ctx.font=`${Math.round(s.captionSize*2.3)}px sans-serif`;ctx.textAlign=s.captionAlign==='left'?'left':s.captionAlign==='right'?'right':'center';
+  ctx.fillStyle=s.captionColor;ctx.font=`${Math.round(s.captionSize*2.3)}px ${s.captionFont||'Arial, sans-serif'}`;ctx.textAlign=s.captionAlign==='left'?'left':s.captionAlign==='right'?'right':'center';
   const tx=s.captionAlign==='left'?47:s.captionAlign==='right'?591:319;ctx.fillText(s.caption,tx,900,544);
   return new Promise(res=>canvas.toBlob(res,type,type==='image/jpeg'?.94:undefined))
 }
