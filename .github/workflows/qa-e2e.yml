@@ -1,4 +1,5 @@
 name: QA Petra Foto E2E
+# rerun after candidate fix
 
 on:
   push:
