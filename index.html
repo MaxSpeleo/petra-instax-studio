@@ -46,9 +46,9 @@
         <button value="cancel" class="icon">✕</button>
       </header>
       <div class="editor-preview">
-        <div class="instax-large">
-          <div class="instax-window" id="editorWindow"><img id="editorImg" alt=""></div>
-          <input id="captionInput" class="caption-large" placeholder="Tocca qui per scrivere data o testo" maxlength="42">
+        <div class="instax-large" id="instaxPreview">
+          <div class="instax-window selected-editable" id="editorWindow" data-edit-target="photo"><img id="editorImg" alt=""><span class="edit-chip">FOTO</span></div>
+          <input id="captionInput" class="caption-large" data-edit-target="text" placeholder="Tocca qui per scrivere data o testo" maxlength="42">
         </div>
       </div>
       <nav class="tabs">
