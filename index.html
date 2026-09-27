@@ -32,6 +32,10 @@
     <section class="sheet-shell">
       <div class="sheet" id="sheet"></div>
     </section>
+    <section class="gallery" id="gallerySection">
+      <div class="gallery-head"><strong>Galleria locale</strong><span id="galleryCount">0 miniature</span></div>
+      <div class="gallery-grid" id="gallery"></div>
+    </section>
 
     <p class="print-note">Stampa: A4 • scala 100% / dimensioni effettive • margini minimi/nessuno • intestazioni e piè di pagina disattivati.</p>
   </main>
@@ -60,16 +64,32 @@
         <div class="row">
           <button type="button" id="rotLeft">↶ 90°</button>
           <button type="button" id="rotRight">↷ 90°</button>
-          <button type="button" id="flipH">↔ Flip</button>
+          <button type="button" id="flipH">↔ Flip H</button>
+          <button type="button" id="flipV">↕ Flip V</button>
+          <button type="button" id="beforeAfter">Prima/Dopo</button>
           <button type="button" id="resetTransform">Reset</button>
         </div>
       </section>
-      <section class="panel" data-panel="filters"><div id="filterPresets" class="preset-grid"></div></section>
+      <section class="panel" data-panel="filters">
+        <div id="filterPresets" class="preset-grid"></div>
+        <div class="frame-row">
+          <label>Cornice
+            <select id="frameStyle">
+              <option value="none">Nessuna</option>
+              <option value="soft">Soft</option>
+              <option value="classic">Classica</option>
+              <option value="black">Nera</option>
+            </select>
+          </label>
+        </div>
+      </section>
       <section class="panel" data-panel="adjust">
         <label>Luminosità <input id="brightness" type="range" min="50" max="150" step="1"></label>
         <label>Contrasto <input id="contrast" type="range" min="50" max="160" step="1"></label>
         <label>Saturazione <input id="saturation" type="range" min="0" max="200" step="1"></label>
         <label>Calore <input id="warmth" type="range" min="-50" max="50" step="1"></label>
+        <label>Vignettatura <input id="vignette" type="range" min="0" max="70" step="1"></label>
+        <label>Nitidezza <input id="sharpness" type="range" min="0" max="100" step="1"></label>
       </section>
       <section class="panel" data-panel="text">
         <label>Dimensione <input id="captionSize" type="range" min="8" max="18" step="1"></label>
@@ -85,6 +105,7 @@
         <div class="row">
           <button type="button" id="duplicateBtn">Duplica</button>
           <button type="button" id="deleteBtn">Elimina</button>
+          <button type="button" id="downloadJpgBtn">JPG</button>
           <button type="button" id="shareBtn">Condividi</button>
           <button type="button" id="saveSlotBtn" class="primary">Salva</button>
         </div>
