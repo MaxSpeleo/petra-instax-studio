@@ -6,7 +6,7 @@ const sheet=$('#sheet'), editor=$('#editor'), editorImg=$('#editorImg'), editorW
 const defaults=()=>({
   src:null,x:0,y:0,zoom:1,rotation:0,flipX:1,flipY:1,
   brightness:100,contrast:100,saturation:100,warmth:0,vignette:0,sharpness:0,frameStyle:'none',
-  preset:'Originale',caption:'',captionSize:12,captionColor:'#3b3535',
+  preset:'Originale',caption:'',captionSize:16,captionColor:'#3b3535',
   captionAlign:'center',locked:false,width:0,height:0,history:[],future:[]
 });
 let slots=Array.from({length:N},defaults);
@@ -35,7 +35,7 @@ function cssFilter(s){
   const sharpBoost=1+(s.sharpness||0)/500;
   return `brightness(${b}%) contrast(${c*sharpBoost}%) saturate(${sat}%) sepia(${Math.max(p.sepia,extraWarm)}%) grayscale(${p.gray}%) hue-rotate(${p.hue+(s.warmth<0?s.warmth*1.4:0)}deg)`;
 }
-function transform(s){return `translate(${s.x}px,${s.y}px) scale(${s.zoom}) rotate(${s.rotation}deg) scale(${s.flipX},${s.flipY||1})`}
+function transform(s,moveScale=1){return `translate(${s.x*moveScale}px,${s.y*moveScale}px) scale(${s.zoom}) rotate(${s.rotation}deg) scale(${s.flipX},${s.flipY||1})`}
 function vignetteStyle(s){return `background:radial-gradient(circle at center,transparent ${Math.max(20,72-(s.vignette||0)*.55)}%,rgba(0,0,0,${(s.vignette||0)/120}) 100%)`}
 function frameClass(s){return s.frameStyle&&s.frameStyle!=='none'?` frame-${s.frameStyle}`:''}
 
@@ -47,7 +47,7 @@ function render(){
     c.draggable=true;c.dataset.i=i;
     c.innerHTML=`
       <div class="photo-box" data-open="${i}">
-        ${s.src?`<img src="${s.src}" style="transform:${transform(s)};filter:${cssFilter(s)}"><div class="vignette" style="${vignetteStyle(s)}"></div><div class="frame-overlay${frameClass(s)}"></div>`:`<div class="placeholder">TOCCA QUI<br>PER INSERIRE<br>LA FOTO</div>`}
+        ${s.src?`<img src="${s.src}" style="transform:${transform(s,.756)};filter:${cssFilter(s)}"><div class="vignette" style="${vignetteStyle(s)}"></div><div class="frame-overlay${frameClass(s)}"></div>`:`<div class="placeholder">TOCCA QUI<br>PER INSERIRE<br>LA FOTO</div>`}
       </div>
       <input class="mini-caption" data-caption="${i}" value="${esc(s.caption)}" placeholder="data o breve testo"
         style="font-size:${s.captionSize}px;color:${s.captionColor};text-align:${s.captionAlign}" ${s.locked?'readonly':''}>
@@ -178,7 +178,7 @@ $('#duplicateBtn').onclick=()=>{
   slots[empty]={...defaults(),...snapshot(slots[current]),locked:false,history:[],future:[]};render();alert('Miniatura duplicata.')
 };
 $('#deleteBtn').onclick=()=>{if(confirm('Eliminare questa miniatura?')){slots[current]=defaults();editor.close();render()}};
-$('#saveSlotBtn').onclick=()=>{slots[current].locked=true;editor.close();render()};
+$('#saveSlotBtn').onclick=()=>{slots[current].locked=true;persist();editor.close();render()};
 $('#downloadJpgBtn').onclick=async()=>{const blob=await exportCurrentBlob('image/jpeg');downloadBlob(blob,'petra-instax-mini.jpg')};
 $('#shareBtn').onclick=async()=>{
   const blob=await exportCurrentBlob();const file=new File([blob],'petra-instax-mini.png',{type:'image/png'});
@@ -186,13 +186,50 @@ $('#shareBtn').onclick=async()=>{
   else{downloadBlob(blob,'petra-instax-mini.png')}
 };
 
+const activePointers=new Map();
+let pinchStart=null;
 editorWindow.addEventListener('pointerdown',e=>{
-  if(current<0)return;dragging=true;dragStart={cx:e.clientX,cy:e.clientY,x:slots[current].x,y:slots[current].y};editorWindow.setPointerCapture(e.pointerId);pushHistory();e.preventDefault()
+  if(current<0)return;
+  activePointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  editorWindow.setPointerCapture(e.pointerId);
+  pushHistory();
+  if(activePointers.size===1){
+    dragging=true;
+    dragStart={cx:e.clientX,cy:e.clientY,x:slots[current].x,y:slots[current].y};
+    pinchStart=null;
+  }else if(activePointers.size===2){
+    dragging=false;
+    const pts=[...activePointers.values()];
+    pinchStart={distance:Math.hypot(pts[1].x-pts[0].x,pts[1].y-pts[0].y),zoom:slots[current].zoom};
+  }
+  e.preventDefault();
 });
 editorWindow.addEventListener('pointermove',e=>{
-  if(!dragging)return;slots[current].x=dragStart.x+e.clientX-dragStart.cx;slots[current].y=dragStart.y+e.clientY-dragStart.cy;syncEditor();e.preventDefault()
+  if(!activePointers.has(e.pointerId))return;
+  activePointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(activePointers.size===2&&pinchStart){
+    const pts=[...activePointers.values()];
+    const d=Math.hypot(pts[1].x-pts[0].x,pts[1].y-pts[0].y);
+    slots[current].zoom=Math.max(1,Math.min(3,pinchStart.zoom*(d/pinchStart.distance)));
+    syncEditor();e.preventDefault();return;
+  }
+  if(dragging&&activePointers.size===1){
+    slots[current].x=dragStart.x+e.clientX-dragStart.cx;
+    slots[current].y=dragStart.y+e.clientY-dragStart.cy;
+    syncEditor();e.preventDefault();
+  }
 });
-editorWindow.addEventListener('pointerup',()=>dragging=false);
+function endEditorPointer(e){
+  activePointers.delete(e.pointerId);
+  if(activePointers.size===0){dragging=false;pinchStart=null;persist()}
+  else if(activePointers.size===1){
+    const [p]=activePointers.values();
+    dragging=true;dragStart={cx:p.x,cy:p.y,x:slots[current].x,y:slots[current].y};
+    pinchStart=null;
+  }
+}
+editorWindow.addEventListener('pointerup',endEditorPointer);
+editorWindow.addEventListener('pointercancel',endEditorPointer);
 
 document.addEventListener('keydown',e=>{
   if(!editor.open||current<0||/INPUT|TEXTAREA/.test(document.activeElement.tagName))return;
@@ -210,7 +247,8 @@ async function exportCurrentBlob(type='image/png'){
   ctx.filter=cssFilter(s);
   const base=Math.max(win.w/img.width,win.h/img.height)*s.zoom;
   const w=img.width*base,h=img.height*base;
-  ctx.translate(win.x+win.w/2+s.x*2,win.y+win.h/2+s.y*2);ctx.rotate(s.rotation*Math.PI/180);ctx.scale(s.flipX,s.flipY||1);
+  const moveScale=win.w/230;
+  ctx.translate(win.x+win.w/2+s.x*moveScale,win.y+win.h/2+s.y*moveScale);ctx.rotate(s.rotation*Math.PI/180);ctx.scale(s.flipX,s.flipY||1);
   ctx.drawImage(img,-w/2,-h/2,w,h);ctx.restore();ctx.filter='none';
   if((s.vignette||0)>0){const g=ctx.createRadialGradient(win.x+win.w/2,win.y+win.h/2,win.w*.18,win.x+win.w/2,win.y+win.h/2,win.w*.68);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,`rgba(0,0,0,${(s.vignette||0)/120})`);ctx.fillStyle=g;ctx.fillRect(win.x,win.y,win.w,win.h)}
   drawFrame(ctx,s,win);
@@ -304,7 +342,7 @@ function renderGallery(){
   $('#galleryCount').textContent=`${filled.length} miniature`;
   filled.forEach(({s,i})=>{
     const b=document.createElement('button');b.type='button';b.className='gallery-item';
-    b.innerHTML=`<div class="gallery-thumb"><img src="${s.src}" style="transform:${transform(s)};filter:${cssFilter(s)}"></div><span>${esc(s.caption)||'Miniatura '+(i+1)}</span>`;
+    b.innerHTML=`<div class="gallery-thumb"><img src="${s.src}" style="transform:${transform(s,.756)};filter:${cssFilter(s)}"></div><span>${esc(s.caption)||'Miniatura '+(i+1)}</span>`;
     b.onclick=()=>openEditor(i);g.appendChild(b);
   });
 }
