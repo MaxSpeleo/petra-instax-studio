@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#090a0a">
+  <meta name="petra-build" content="35">
+  <title>Petra Foto — prova tema</title>
+  <link rel="stylesheet" href="user-v2.css?v=35">
+  <link rel="stylesheet" href="theme-preview.css?v=1">
+</head>
+<body data-app-mode="user">
+  <main class="app">
+    <div class="theme-preview-banner"><div><div class="label">PROVA TEMA · colore pulsanti</div><div class="preview-note">Solo questa pagina. L’app condivisibile non cambia.</div></div><div class="theme-swatches"><button class="theme-swatch active" data-accent="#28e0be" aria-label="Turchese"></button><button class="theme-swatch" data-accent="#f08aad" aria-label="Rosa"></button><button class="theme-swatch" data-accent="#f2a83b" aria-label="Ambra"></button><button class="theme-swatch" data-accent="#f0f3f2" aria-label="Bianco"></button></div></div>
+    <header class="topbar">
+      <div>
+        <button id="galleryBtn" class="circle-btn active-dot" aria-label="Galleria">▧</button>
+        <div class="brand">petrafoto.</div>
+      </div>
+      <div class="top-actions">
+        <button id="clearAllBtn" class="circle-btn" aria-label="Svuota foglio">≡</button>
+        <button id="historyBtn" class="circle-btn" aria-label="Cronologia">↶</button>
+      </div>
+    </header>
+
+    <section class="stage">
+      <div class="carousel">
+        <button id="prevCard" class="side-card" aria-label="Mini precedente"></button>
+        <article id="mainCard" class="instax-card" aria-label="Miniatura corrente">
+          <img id="mainImg" class="saved-preview hidden" alt="Miniatura">
+          <div class="instax-window">
+            <div id="mainEmpty" class="instax-empty">Tocca qui<br>per aggiungere<br>una foto</div>
+          </div>
+          <div id="mainCaption" class="instax-caption"></div>
+          <span id="slotNo" class="slot-number">1 / 9</span>
+        </article>
+        <button id="nextCard" class="side-card" aria-label="Mini successiva"></button>
+      </div>
+      <div id="dots" class="dots"></div>
+    </section>
+
+    <section class="status-row">
+      <div>
+        <div class="status-title">Petra Foto</div>
+        <div id="statusSub" class="status-sub">Casella vuota · tocca per aggiungere</div>
+      </div>
+      <div class="status-pill">54 × 86 mm</div>
+    </section>
+
+    <section class="main-actions">
+      <button id="addPhotoBtn" class="action-tile primary">
+        <span class="ico">＋</span><strong>Aggiungi / modifica</strong><span>Foto, testo e filtri</span>
+      </button>
+      <button id="sheetBtn" class="action-tile">
+        <span class="ico">▦</span><strong>Foglio A4</strong><span>9 Mini pronte da stampare</span>
+      </button>
+    </section>
+    <div class="sheet-bar"><span>9 miniature · qualsiasi stampante</span><span>300 dpi consigliati</span></div>
+  </main>
+
+  <dialog id="photoEditor" class="editor-dialog">
+    <div class="editor-shell">
+      <header class="editor-head">
+        <div><div class="editor-title">Modifica miniatura</div><div id="editorMeta" class="editor-meta">Mini 1 di 9</div></div>
+        <div class="head-actions">
+          <button id="undoBtn" class="head-btn" type="button" aria-label="Annulla">↶</button>
+          <button id="redoBtn" class="head-btn" type="button" aria-label="Ripeti">↷</button>
+          <button id="editorClose" class="head-btn" type="button" aria-label="Chiudi">✕</button>
+        </div>
+      </header>
+
+      <div class="editor-main">
+        <div class="canvas-wrap">
+          <div class="canvas-shell"><canvas id="editorCanvas" width="540" height="860"></canvas><input id="directCaptionInput" class="direct-caption-input" type="text" maxlength="42" placeholder="Tocca qui per scrivere"></div>
+        </div>
+
+        <div class="context">
+          <nav class="context-tabs">
+            <button type="button" data-panel="photo" class="active">Foto</button>
+            <button type="button" data-panel="text">Testo</button>
+            <button type="button" data-panel="filters">Filtri</button>
+            <button type="button" data-panel="adjust">Regola</button>
+          </nav>
+
+          <section class="panel active" data-panel="photo">
+            <div class="toolrow">
+              <button id="replacePhoto" class="tool accent" type="button">Cambia foto</button>
+              <button id="rotateLeft" class="tool" type="button">↶ 90°</button>
+              <button id="rotateRight" class="tool" type="button">↷ 90°</button>
+              <button id="flipPhoto" class="tool" type="button">↔ Specchia</button>
+              <button id="resetPhoto" class="tool" type="button">Reset</button>
+              <button id="deletePhoto" class="tool danger" type="button">Elimina foto</button>
+            </div>
+            <div class="control-grid" style="margin-top:8px"><label>Zoom</label><input id="zoomPhoto" type="range" min="1" max="3" step=".01" value="1"></div>
+          </section>
+
+          <section class="panel" data-panel="text">
+            <div class="control-grid">
+              <label>Carattere</label>
+              <select id="fontFamily">
+                <option value="Arial">Pulito</option>
+                <option value="Georgia">Elegante</option>
+                <option value="Trebuchet MS">Morbido</option>
+                <option value="Courier New">Macchina</option>
+                <option value="Comic Sans MS">Manoscritto</option>
+              </select>
+              <label>Dimensione</label><input id="fontSize" type="range" min="22" max="60" value="34">
+              <label>Colore</label><input id="fontColor" class="color-input" type="color" value="#252626">
+            </div>
+            <div class="toolrow" style="margin-top:8px">
+              <button class="tool" data-align="left" type="button">Sinistra</button>
+              <button class="tool" data-align="center" type="button">Centro</button>
+              <button class="tool" data-align="right" type="button">Destra</button>
+              <button id="deleteText" class="tool danger" type="button">Elimina testo</button>
+            </div>
+          </section>
+
+          <section class="panel" data-panel="filters">
+            <div class="control-grid">
+              <label>Stile</label>
+              <select id="filterPreset">
+                <option value="original">Originale</option>
+                <option value="vivid">Vivace</option>
+                <option value="warm">Caldo</option>
+                <option value="bw">Bianco e nero</option>
+                <option value="sepia">Seppia</option>
+              </select>
+            </div>
+          </section>
+
+          <section class="panel" data-panel="adjust">
+            <div class="control-grid">
+              <label>Luminosità</label><input id="brightness" type="range" min="-45" max="45" value="0">
+              <label>Contrasto</label><input id="contrast" type="range" min="-45" max="45" value="0">
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <footer class="editor-footer">
+        <button id="deleteMini" class="footer-btn" type="button">Elimina miniatura</button>
+        <button id="saveEditor" class="footer-btn primary" type="button">Fatto</button>
+      </footer>
+    </div>
+  </dialog>
+
+  <dialog id="libraryDialog" class="library-dialog">
+    <section class="library">
+      <header class="library-head"><h2 id="libraryTitle">Galleria</h2><button id="libraryClose" class="head-btn" type="button">✕</button></header>
+      <div id="galleryPane"><div id="galleryGrid" class="library-grid"></div></div>
+      <div id="historyPane" class="hidden"><div id="historyGrid" class="library-grid"></div></div>
+    </section>
+  </dialog>
+
+  <dialog id="sheetDialog" class="sheet-dialog">
+    <section class="sheet-preview">
+      <header class="sheet-head">
+        <h2>Foglio A4 · 9 Mini</h2>
+        <div class="sheet-head-actions"><button id="printA4" type="button">Stampa / PDF</button><button id="sheetClose" type="button">Chiudi</button></div>
+      </header>
+      <div class="a4-screen"><div id="a4" class="a4"></div></div>
+    </section>
+  </dialog>
+
+  <input id="photoFile" type="file" accept="image/*" hidden>
+  <div id="toast" class="toast"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js" referrerpolicy="no-referrer"></script>
+  <script src="user-v2.js?v=35"></script>
+  <script>
+    document.querySelectorAll(".theme-swatch").forEach(btn=>btn.addEventListener("click",()=>{
+      document.documentElement.style.setProperty("--accent",btn.dataset.accent);
+      document.documentElement.style.setProperty("--accent-soft",btn.dataset.accent+"24");
+      document.querySelectorAll(".theme-swatch").forEach(x=>x.classList.toggle("active",x===btn));
+    }));
+  </script>
+</body>
+</html>

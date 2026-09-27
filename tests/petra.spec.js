@@ -105,3 +105,23 @@ test('Petra Foto: crea, salva, condivide vuoto, ricarica ed elimina miniature', 
 
   expect(errors, errors.join('\n')).toEqual([]);
 });
+
+test('Theme preview: isolated, functional and does not alter shared app', async ({ page }) => {
+  const errors=[];
+  page.on('pageerror',e=>errors.push(e.message));
+  page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});
+  await page.goto('http://127.0.0.1:4173/theme-preview.html?workspace=theme-preview-qa');
+  await expect(page.locator('.theme-preview-banner')).toBeVisible();
+  await expect(page.locator('.status-title')).toHaveText('Petra Foto');
+  await expect(page.locator('#statusSub')).toContainText('Salvate 0 / 9');
+
+  const before=await page.evaluate(()=>getComputedStyle(document.documentElement).getPropertyValue('--accent').trim());
+  expect(before).toBe('#28e0be');
+  await page.locator('.theme-swatch[data-accent="#f08aad"]').click();
+  const after=await page.evaluate(()=>getComputedStyle(document.documentElement).getPropertyValue('--accent').trim());
+  expect(after).toBe('#f08aad');
+
+  await expect(page.locator('#addPhotoBtn')).toBeVisible();
+  await expect(page.locator('#sheetBtn')).toBeVisible();
+  expect(errors,errors.join('\n')).toEqual([]);
+});
