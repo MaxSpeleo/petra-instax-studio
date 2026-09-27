@@ -275,7 +275,7 @@ async function saveEditor(){
 
     const cap=getCaption(),wasPlaceholder=cap?.isPlaceholder,oldVisible=cap?.visible;
     if(wasPlaceholder&&cap)cap.visible=false;
-    const preview=canvas.toDataURL({format:'png',multiplier:.5,quality:.92});
+    const preview=canvas.toDataURL({format:'jpeg',multiplier:638/W,quality:.94});
     if(cap)cap.visible=oldVisible!==false;
     canvas.requestRenderAll();
 
