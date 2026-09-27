@@ -64,7 +64,7 @@ function renderMain(){
     els.statusSub.textContent='Salvate '+savedCount+' / '+N+' · tocca la stampa per modificarla';
   }else{
     els.mainImg.removeAttribute('src');els.mainImg.classList.add('hidden');els.empty.classList.remove('hidden');
-    els.caption.textContent='';els.statusSub.textContent='Casella vuota · tocca per aggiungere';
+    els.caption.textContent='';els.statusSub.textContent='Salvate '+savedCount+' / '+N+' · casella vuota';
   }
   els.dots.innerHTML=Array.from({length:N},(_,i)=>'<span class="dot '+(i===current?'active':'')+'"></span>').join('');
   renderSidePreviews();
