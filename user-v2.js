@@ -56,11 +56,12 @@ function currentSlot(){return slots[current]}
 
 function renderMain(){
   const s=currentSlot();
+  const savedCount=slots.filter(Boolean).length;
   els.slotNo.textContent=(current+1)+' / '+N;
   if(s?.preview){
     els.mainImg.src=s.preview;els.mainImg.classList.remove('hidden');els.empty.classList.add('hidden');
     els.caption.textContent=s.caption && s.caption!=='Tocca qui per scrivere' ? s.caption : '';
-    els.statusSub.textContent='Tocca la stampa per modificarla';
+    els.statusSub.textContent='Salvate '+savedCount+' / '+N+' · tocca la stampa per modificarla';
   }else{
     els.mainImg.removeAttribute('src');els.mainImg.classList.add('hidden');els.empty.classList.remove('hidden');
     els.caption.textContent='';els.statusSub.textContent='Casella vuota · tocca per aggiungere';
@@ -287,24 +288,49 @@ async function saveEditor(){
     current=editingIndex;dirty=false;
     els.editor.close();renderMain();renderA4();toast('Salvato');
 
-    const backend=await safePut(editingIndex,data);
+    const savedId=editingIndex;
+    const backend=await safePut(savedId,data);
     console.info('Saved with',backend);
+    const nextEmpty=slots.findIndex((s,idx)=>idx>savedId&&!s);
+    if(nextEmpty>=0){current=nextEmpty;renderMain()}
   }catch(e){
     console.error('Save failed',e);
     toast('Errore salvataggio');
   }
 }
-$('#saveEditor').onclick=saveEditor;
-$('#saveEditor').addEventListener('pointerup',e=>{e.currentTarget.classList.add('tap-ok');setTimeout(()=>e.currentTarget.classList.remove('tap-ok'),180)});
+let actionLock=false;
+async function runSaveAction(e){
+  e?.preventDefault?.();e?.stopPropagation?.();
+  if(actionLock)return;
+  actionLock=true;
+  const btn=$('#saveEditor');btn?.classList.add('tap-ok');
+  try{await saveEditor()}finally{
+    setTimeout(()=>btn?.classList.remove('tap-ok'),180);
+    setTimeout(()=>{actionLock=false},220);
+  }
+}
+$('#saveEditor').addEventListener('pointerup',runSaveAction);
+$('#saveEditor').addEventListener('click',e=>{if(e.detail===0)runSaveAction(e)});
 
-$('#deleteMini').onclick=async()=>{
+async function deleteCurrentMini(){
   if(editingIndex<0)return;
   if(!confirm('Eliminare completamente questa miniatura?'))return;
   const id=editingIndex;
   slots[id]=null;dirty=false;els.editor.close();current=id;renderMain();renderA4();toast('Miniatura eliminata');
   try{await safeDelete(id)}catch(e){console.error('Delete failed',e);toast('Eliminata solo per questa sessione')}
-};
-$('#deleteMini').addEventListener('pointerup',e=>{e.currentTarget.classList.add('tap-ok');setTimeout(()=>e.currentTarget.classList.remove('tap-ok'),180)});
+}
+async function runDeleteAction(e){
+  e?.preventDefault?.();e?.stopPropagation?.();
+  if(actionLock)return;
+  actionLock=true;
+  const btn=$('#deleteMini');btn?.classList.add('tap-ok');
+  try{await deleteCurrentMini()}finally{
+    setTimeout(()=>btn?.classList.remove('tap-ok'),180);
+    setTimeout(()=>{actionLock=false},220);
+  }
+}
+$('#deleteMini').addEventListener('pointerup',runDeleteAction);
+$('#deleteMini').addEventListener('click',e=>{if(e.detail===0)runDeleteAction(e)});
 
 window.addEventListener('keydown',e=>{if(e.key==='Escape'&&els.editor.open&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName||'')){e.preventDefault();closeEditor()}});
 window.addEventListener('error',e=>{console.error(e.error||e.message);});
