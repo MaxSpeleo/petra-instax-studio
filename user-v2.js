@@ -298,39 +298,28 @@ async function saveEditor(){
     toast('Errore salvataggio');
   }
 }
-let actionLock=false;
-async function runSaveAction(e){
-  e?.preventDefault?.();e?.stopPropagation?.();
-  if(actionLock)return;
-  actionLock=true;
-  const btn=$('#saveEditor');btn?.classList.add('tap-ok');
-  try{await saveEditor()}finally{
-    setTimeout(()=>btn?.classList.remove('tap-ok'),180);
-    setTimeout(()=>{actionLock=false},220);
-  }
-}
-$('#saveEditor').addEventListener('pointerup',runSaveAction);
-$('#saveEditor').addEventListener('click',e=>{if(e.detail===0)runSaveAction(e)});
+$('#saveEditor').onclick=async e=>{
+  e.preventDefault();
+  await saveEditor();
+};
 
 async function deleteCurrentMini(){
   if(editingIndex<0)return;
   if(!confirm('Eliminare completamente questa miniatura?'))return;
   const id=editingIndex;
-  slots[id]=null;dirty=false;els.editor.close();current=id;renderMain();renderA4();toast('Miniatura eliminata');
+  slots[id]=null;
+  dirty=false;
+  els.editor.close();
+  current=id;
+  renderMain();
+  renderA4();
+  toast('Miniatura eliminata');
   try{await safeDelete(id)}catch(e){console.error('Delete failed',e);toast('Eliminata solo per questa sessione')}
 }
-async function runDeleteAction(e){
-  e?.preventDefault?.();e?.stopPropagation?.();
-  if(actionLock)return;
-  actionLock=true;
-  const btn=$('#deleteMini');btn?.classList.add('tap-ok');
-  try{await deleteCurrentMini()}finally{
-    setTimeout(()=>btn?.classList.remove('tap-ok'),180);
-    setTimeout(()=>{actionLock=false},220);
-  }
-}
-$('#deleteMini').addEventListener('pointerup',runDeleteAction);
-$('#deleteMini').addEventListener('click',e=>{if(e.detail===0)runDeleteAction(e)});
+$('#deleteMini').onclick=async e=>{
+  e.preventDefault();
+  await deleteCurrentMini();
+};
 
 window.addEventListener('keydown',e=>{if(e.key==='Escape'&&els.editor.open&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName||'')){e.preventDefault();closeEditor()}});
 window.addEventListener('error',e=>{console.error(e.error||e.message);});
