@@ -10,16 +10,9 @@ test('Petra Foto: crea, salva, ricarica ed elimina miniature', async ({ page }) 
   await page.goto('http://127.0.0.1:4173/?qa=1');
   await expect(page.locator('.status-title')).toHaveText('Petra Foto');
 
-  // Start from a clean persistent state.
-  await page.evaluate(async () => {
-    localStorage.clear();
-    await new Promise(resolve => {
-      const r = indexedDB.deleteDatabase('petra-instax-studio-v2');
-      r.onsuccess = r.onerror = r.onblocked = () => resolve();
-    });
-  });
-  await page.reload();
+  // Playwright starts this test in a fresh browser context, so storage is clean.
   await expect(page.locator('#statusSub')).toContainText('Salvate 0 / 9');
+  expect(errors, errors.join('\n')).toEqual([]);
 
   const fixture = path.join(__dirname, 'fixture.svg');
 
