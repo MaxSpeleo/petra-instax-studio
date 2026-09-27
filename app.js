@@ -257,7 +257,8 @@ loadUi();
 
 // Modalità editor dedicata: aprendo ?mode=edit l'app entra subito in Edit grafica.
 const params=new URLSearchParams(location.search);
-if(params.get('mode')==='edit'){
+const dedicatedEditor=document.body.dataset.appMode==='editor' || location.pathname.endsWith('/editor.html') || params.get('mode')==='edit';
+if(dedicatedEditor){
   setTimeout(()=>{
     if(!uiEdit) $('#uiEditBtn').click();
     document.body.classList.add('editor-link-mode');
