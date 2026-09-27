@@ -238,7 +238,7 @@ $('#fontSize').oninput=e=>{const t=getCaption();if(!t)return;t.set('fontSize',+e
 $('#fontSize').onchange=recordHistory;
 $('#fontColor').oninput=e=>{const t=getCaption();if(!t)return;t.set('fill',e.target.value);if(els.directCaption?.value.trim())t.isPlaceholder=false;canvas.requestRenderAll();dirty=true;syncDirectCaption()};
 $('#fontColor').onchange=recordHistory;
-$('[data-align]').forEach(b=>b.onclick=()=>{const t=getCaption();if(!t)return;t.set('textAlign',b.dataset.align);canvas.requestRenderAll();dirty=true;syncDirectCaption();recordHistory()});
+$$('[data-align]').forEach(b=>b.onclick=()=>{const t=getCaption();if(!t)return;t.set('textAlign',b.dataset.align);canvas.requestRenderAll();dirty=true;syncDirectCaption();recordHistory()});
 $('#deleteText').onclick=()=>{const t=getCaption();if(!t)return;setPlaceholder(t);if(els.directCaption)els.directCaption.value='';canvas.discardActiveObject();canvas.requestRenderAll();dirty=true;syncDirectCaption();recordHistory()};
 
 $('#filterPreset').onchange=e=>{const p=getPhoto();if(!p)return;p.photoPreset=e.target.value;applyPhotoFilters(p);dirty=true;recordHistory()};
