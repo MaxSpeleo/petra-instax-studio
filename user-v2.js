@@ -30,9 +30,26 @@ async function dbGetAll(){const db=await openDB();return new Promise((res,rej)=>
 async function dbPut(id,data){const db=await openDB();return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).put({id,...data});tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}
 async function dbDelete(id){const db=await openDB();return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).delete(id);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}
 async function dbClear(){const db=await openDB();return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).clear();tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}
+const LS_KEY='petra-instax-v2-fallback';
+function lsRead(){try{return JSON.parse(localStorage.getItem(LS_KEY)||'{}')}catch(e){return {}}}
+function lsWriteAll(obj){try{localStorage.setItem(LS_KEY,JSON.stringify(obj));return true}catch(e){return false}}
+function lsPut(id,data){const all=lsRead();all[id]={id,...data};return lsWriteAll(all)}
+function lsDelete(id){const all=lsRead();delete all[id];return lsWriteAll(all)}
+function lsClear(){try{localStorage.removeItem(LS_KEY);return true}catch(e){return false}}
+async function safePut(id,data){
+  try{await dbPut(id,data);return 'indexeddb'}catch(e){console.warn('IndexedDB save failed',e);if(lsPut(id,data))return 'localStorage';throw e}
+}
+async function safeDelete(id){
+  try{await dbDelete(id);lsDelete(id);return 'indexeddb'}catch(e){console.warn('IndexedDB delete failed',e);if(lsDelete(id))return 'localStorage';throw e}
+}
+async function safeClear(){
+  let ok=false;try{await dbClear();ok=true}catch(e){console.warn('IndexedDB clear failed',e)}
+  if(lsClear())ok=true;if(!ok)throw new Error('Impossibile svuotare archivio')
+}
 
 async function init(){
-  try{(await dbGetAll()).forEach(x=>{if(x.id>=0&&x.id<N)slots[x.id]=x})}catch(e){console.warn(e)}
+  try{(await dbGetAll()).forEach(x=>{if(x.id>=0&&x.id<N)slots[x.id]=x})}catch(e){console.warn('IndexedDB load failed',e)}
+  const fallback=lsRead();Object.values(fallback).forEach(x=>{if(x&&x.id>=0&&x.id<N&&!slots[x.id])slots[x.id]=x});
   renderMain();renderA4();
 }
 function currentSlot(){return slots[current]}
@@ -77,7 +94,7 @@ $('#addPhotoBtn').onclick=()=>currentSlot()?.preview?openEditor(current):chooseP
 $('#galleryBtn').onclick=()=>openLibrary(false);$('#historyBtn').onclick=()=>openLibrary(true);
 $('#sheetBtn').onclick=()=>{renderA4();els.sheet.showModal()};
 $('#sheetClose').onclick=()=>els.sheet.close();$('#printA4').onclick=()=>window.print();
-$('#clearAllBtn').onclick=async()=>{if(confirm('Svuotare tutte le 9 miniature?')){await dbClear();slots=Array.from({length:N},()=>null);renderMain();renderA4();toast('Foglio svuotato')}};
+$('#clearAllBtn').onclick=async()=>{if(!confirm('Svuotare tutte le 9 miniature?'))return;slots=Array.from({length:N},()=>null);renderMain();renderA4();toast('Foglio svuotato');try{await safeClear()}catch(e){toast('Foglio svuotato solo per questa sessione')}};
 
 function openLibrary(historyMode){
   const grid=historyMode?els.historyGrid:els.galleryGrid;
@@ -249,23 +266,47 @@ if(els.directCaption){
 }
 
 async function saveEditor(){
-  applyDirectCaptionValue();
-  const p=getPhoto();if(!p){toast('Inserisci prima una foto');showPanel('photo');return}
-  canvas.discardActiveObject();canvas.requestRenderAll();
-  const cap=getCaption(),wasPlaceholder=cap?.isPlaceholder,oldVisible=cap?.visible;
-  if(wasPlaceholder)cap.visible=false;
-  const preview=canvas.toDataURL({format:'png',multiplier:.5,quality:.95});
-  if(cap)cap.visible=oldVisible!==false;canvas.requestRenderAll();
-  const state=serialize();
-  const caption=cap&&!wasPlaceholder?cap.text:'';
-  const data={state,preview,caption,updatedAt:Date.now()};
-  await dbPut(editingIndex,data);slots[editingIndex]={id:editingIndex,...data};
-  current=editingIndex;dirty=false;els.editor.close();renderMain();renderA4();toast('Miniatura salvata')
+  try{
+    applyDirectCaptionValue();
+    const p=getPhoto();
+    if(!p){toast('Inserisci prima una foto');showPanel('photo');return}
+    canvas.discardActiveObject();canvas.requestRenderAll();
+
+    const cap=getCaption(),wasPlaceholder=cap?.isPlaceholder,oldVisible=cap?.visible;
+    if(wasPlaceholder&&cap)cap.visible=false;
+    const preview=canvas.toDataURL({format:'png',multiplier:.5,quality:.92});
+    if(cap)cap.visible=oldVisible!==false;
+    canvas.requestRenderAll();
+
+    const state=serialize();
+    const caption=cap&&!wasPlaceholder?cap.text:'';
+    const data={state,preview,caption,updatedAt:Date.now()};
+
+    // Update UI first: the button must feel alive immediately.
+    slots[editingIndex]={id:editingIndex,...data};
+    current=editingIndex;dirty=false;
+    els.editor.close();renderMain();renderA4();toast('Salvato');
+
+    const backend=await safePut(editingIndex,data);
+    console.info('Saved with',backend);
+  }catch(e){
+    console.error('Save failed',e);
+    toast('Errore salvataggio');
+  }
 }
 $('#saveEditor').onclick=saveEditor;
+$('#saveEditor').addEventListener('pointerup',e=>{e.currentTarget.classList.add('tap-ok');setTimeout(()=>e.currentTarget.classList.remove('tap-ok'),180)});
 
-$('#deleteMini').onclick=async()=>{if(editingIndex<0)return;if(confirm('Eliminare completamente questa miniatura?')){await dbDelete(editingIndex);slots[editingIndex]=null;dirty=false;els.editor.close();current=editingIndex;renderMain();renderA4();toast('Miniatura eliminata')}};
+$('#deleteMini').onclick=async()=>{
+  if(editingIndex<0)return;
+  if(!confirm('Eliminare completamente questa miniatura?'))return;
+  const id=editingIndex;
+  slots[id]=null;dirty=false;els.editor.close();current=id;renderMain();renderA4();toast('Miniatura eliminata');
+  try{await safeDelete(id)}catch(e){console.error('Delete failed',e);toast('Eliminata solo per questa sessione')}
+};
+$('#deleteMini').addEventListener('pointerup',e=>{e.currentTarget.classList.add('tap-ok');setTimeout(()=>e.currentTarget.classList.remove('tap-ok'),180)});
 
 window.addEventListener('keydown',e=>{if(e.key==='Escape'&&els.editor.open&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName||'')){e.preventDefault();closeEditor()}});
+window.addEventListener('error',e=>{console.error(e.error||e.message);});
 init();
 })();
