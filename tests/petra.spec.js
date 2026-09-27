@@ -1,7 +1,7 @@
 const { test, expect } = require('@playwright/test');
 const path = require('path');
 
-test('Petra Foto: crea, salva, ricarica ed elimina miniature', async ({ page }) => {
+test('Petra Foto: crea, salva, condivide vuoto, ricarica ed elimina miniature', async ({ page, context }) => {
   const errors = [];
   page.on('pageerror', e => errors.push('PAGE: ' + e.message));
   page.on('console', m => { if (m.type() === 'error') errors.push('CONSOLE: ' + m.text()); });
@@ -53,6 +53,15 @@ test('Petra Foto: crea, salva, ricarica ed elimina miniature', async ({ page }) 
   await page.locator('#saveEditor').click();
   await expect(page.locator('#photoEditor')).not.toHaveAttribute('open', '');
   await expect(page.locator('#statusSub')).toContainText('Salvate 2 / 9');
+
+  // Permanent share link must always create a fresh isolated workspace,
+  // even on the same device/browser where the owner already has saved Mini.
+  const shared=await context.newPage();
+  await shared.goto('http://127.0.0.1:4173/start.html');
+  await shared.waitForURL(/\?workspace=/);
+  await expect(shared.locator('#statusSub')).toContainText('Salvate 0 / 9');
+  await expect(shared.locator('#mainEmpty')).toBeVisible();
+  await shared.close();
 
   // Verify persistence after a full reload.
   await page.waitForTimeout(500);

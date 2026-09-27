@@ -3,7 +3,9 @@
 
 const N=9, W=540, H=860;
 const PHOTO={x:40,y:50,w:460,h:620};
-const DB_NAME='petra-instax-studio-v2', STORE='slots';
+const params=new URLSearchParams(location.search);
+const WORKSPACE=(params.get('workspace')||'owner').replace(/[^a-zA-Z0-9_-]/g,'').slice(0,64)||'owner';
+const DB_NAME=WORKSPACE==='owner'?'petra-instax-studio-v2':'petra-instax-studio-v2-'+WORKSPACE, STORE='slots';
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 let slots=Array.from({length:N},()=>null), current=0, editingIndex=-1, dirty=false;
 let canvas=null, history=[], historyIndex=-1, historyLock=false;
@@ -30,7 +32,7 @@ async function dbGetAll(){const db=await openDB();return new Promise((res,rej)=>
 async function dbPut(id,data){const db=await openDB();return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).put({id,...data});tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}
 async function dbDelete(id){const db=await openDB();return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).delete(id);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}
 async function dbClear(){const db=await openDB();return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).clear();tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}
-const LS_KEY='petra-instax-v2-fallback';
+const LS_KEY=WORKSPACE==='owner'?'petra-instax-v2-fallback':'petra-instax-v2-fallback-'+WORKSPACE;
 function lsRead(){try{return JSON.parse(localStorage.getItem(LS_KEY)||'{}')}catch(e){return {}}}
 function lsWriteAll(obj){try{localStorage.setItem(LS_KEY,JSON.stringify(obj));return true}catch(e){return false}}
 function lsPut(id,data){const all=lsRead();all[id]={id,...data};return lsWriteAll(all)}
