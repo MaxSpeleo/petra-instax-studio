@@ -4,7 +4,11 @@ name: QA Petra Foto E2E
 on:
   push:
     branches:
-      - "candidate/qa-e2e-20260927"
+      - main
+      - "candidate/**"
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
