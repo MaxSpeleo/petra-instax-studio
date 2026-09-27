@@ -128,3 +128,33 @@ body[data-app-mode="user"] .ui-editor{display:none!important;}
   .panel label{grid-template-columns:92px 1fr;font-size:14px}
   .editor-footer button{min-height:44px}
 }
+
+/* Simplified mobile-first mini editor */
+.simple-editor{max-height:96vh}
+.simple-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;overflow:visible}
+.simple-tabs button{min-width:0;padding:12px 6px;font-size:14px;font-weight:800}
+.quick-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.quick-actions button{min-height:48px;font-size:15px;font-weight:800}
+.danger-soft{background:#fff1ef!important;color:#a33f32!important;border:1px solid #efc9c3!important}
+.panel-hint{margin:0 0 4px;color:#6f6664;font-size:14px;line-height:1.35}
+.text-panel select,.panel select{width:100%;min-height:42px;border:1px solid #ddd2cf;border-radius:10px;background:#fff;padding:8px}
+.more-actions{background:#fff;border-top:1px solid #eee5e2;padding:10px 16px}
+.more-actions summary{cursor:pointer;font-weight:800;color:#6a5e5c}
+.more-actions .row{margin-top:10px}
+.simple-footer{position:sticky;bottom:0;z-index:4;padding:10px 16px}
+.big-save{width:100%;min-height:52px;font-size:18px;font-weight:900}
+.compact-row button{flex:1 1 28%;min-height:42px}
+.caption-large{border:1px dashed transparent}
+.caption-large:focus{border-color:#d97a59;background:#fff9f5}
+@media(max-width:640px){
+  dialog{width:96vw;max-height:96vh;border-radius:22px}
+  .editor-card{max-height:96vh}
+  .editor-head{padding:12px 14px}
+  .editor-preview{padding:12px}
+  .instax-large{width:240px;height:382px;padding:22px 18px 16px}
+  .instax-window{width:204px;height:275px}
+  .caption-large{width:204px;margin-top:12px;min-height:44px;font-size:18px}
+  .panel{padding:12px 14px;gap:10px}
+  .panel label{grid-template-columns:86px 1fr;gap:10px}
+  .more-actions{padding:8px 14px}
+}
