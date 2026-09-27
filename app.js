@@ -255,6 +255,16 @@ function loadUi(){try{
 }catch(e){}}
 loadUi();
 
+// Modalità editor dedicata: aprendo ?mode=edit l'app entra subito in Edit grafica.
+const params=new URLSearchParams(location.search);
+if(params.get('mode')==='edit'){
+  setTimeout(()=>{
+    if(!uiEdit) $('#uiEditBtn').click();
+    document.body.classList.add('editor-link-mode');
+  },0);
+}
+
+
 function renderGallery(){
   const g=$('#gallery'); if(!g)return;
   g.innerHTML='';
