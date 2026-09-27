@@ -41,48 +41,79 @@
   </main>
 
   <dialog id="editor">
-    <form method="dialog" class="editor-card">
+    <form method="dialog" class="editor-card simple-editor">
       <header class="editor-head">
         <div><strong>Modifica miniatura</strong><small id="qualityText"></small></div>
-        <button value="cancel" class="icon">✕</button>
+        <button value="cancel" class="icon" aria-label="Chiudi">✕</button>
       </header>
+
       <div class="editor-preview">
-        <div class="instax-large">
-          <div class="instax-window" id="editorWindow"><img id="editorImg" alt=""></div>
-          <input id="captionInput" class="caption-large" placeholder="Tocca qui per scrivere data o testo" maxlength="42">
+        <div class="instax-large" id="instaxPreview">
+          <div class="instax-window selected-editable" id="editorWindow" data-edit-target="photo">
+            <img id="editorImg" alt="">
+            <span class="edit-chip">FOTO</span>
+          </div>
+          <input id="captionInput" class="caption-large" data-edit-target="text"
+            placeholder="Tocca qui e scrivi..." maxlength="42">
         </div>
       </div>
-      <nav class="tabs">
-        <button type="button" data-tab="position" class="active">Posizione</button>
+
+      <nav class="tabs simple-tabs">
+        <button type="button" data-tab="position" class="active">Foto</button>
+        <button type="button" data-tab="text">Testo</button>
         <button type="button" data-tab="filters">Filtri</button>
         <button type="button" data-tab="adjust">Regola</button>
-        <button type="button" data-tab="text">Testo</button>
       </nav>
+
       <section class="panel active" data-panel="position">
+        <div class="quick-actions">
+          <button type="button" id="replaceBtn" class="primary">Cambia foto</button>
+          <button type="button" id="deletePhotoBtn" class="danger-soft">Elimina foto</button>
+        </div>
         <label>Zoom <input id="zoom" type="range" min="1" max="3" step=".01"></label>
         <label>Rotazione <input id="rotation" type="range" min="-180" max="180" step="1"></label>
-        <div class="row">
+        <div class="row compact-row">
           <button type="button" id="rotLeft">↶ 90°</button>
           <button type="button" id="rotRight">↷ 90°</button>
-          <button type="button" id="flipH">↔ Flip H</button>
-          <button type="button" id="flipV">↕ Flip V</button>
-          <button type="button" id="beforeAfter">Prima/Dopo</button>
+          <button type="button" id="flipH">↔ Specchia</button>
+          <button type="button" id="flipV">↕ Capovolgi</button>
           <button type="button" id="resetTransform">Reset</button>
+          <button type="button" id="beforeAfter">Prima/Dopo</button>
         </div>
       </section>
+
+      <section class="panel text-panel" data-panel="text">
+        <p class="panel-hint">Tocca direttamente il testo sotto la foto e scrivi.</p>
+        <label>Carattere
+          <select id="captionFont">
+            <option value="Arial, sans-serif">Pulito</option>
+            <option value="Georgia, serif">Elegante</option>
+            <option value="'Trebuchet MS', sans-serif">Morbido</option>
+            <option value="'Courier New', monospace">Macchina</option>
+            <option value="cursive">Scritto a mano</option>
+          </select>
+        </label>
+        <label>Dimensione <input id="captionSize" type="range" min="12" max="34" step="1"></label>
+        <label>Colore <input id="captionColor" type="color"></label>
+        <div class="row">
+          <button type="button" data-align="left">Sinistra</button>
+          <button type="button" data-align="center">Centro</button>
+          <button type="button" data-align="right">Destra</button>
+        </div>
+      </section>
+
       <section class="panel" data-panel="filters">
         <div id="filterPresets" class="preset-grid"></div>
-        <div class="frame-row">
-          <label>Cornice
-            <select id="frameStyle">
-              <option value="none">Nessuna</option>
-              <option value="soft">Soft</option>
-              <option value="classic">Classica</option>
-              <option value="black">Nera</option>
-            </select>
-          </label>
-        </div>
+        <label>Cornice
+          <select id="frameStyle">
+            <option value="none">Nessuna</option>
+            <option value="soft">Soft</option>
+            <option value="classic">Classica</option>
+            <option value="black">Nera</option>
+          </select>
+        </label>
       </section>
+
       <section class="panel" data-panel="adjust">
         <label>Luminosità <input id="brightness" type="range" min="50" max="150" step="1"></label>
         <label>Contrasto <input id="contrast" type="range" min="50" max="160" step="1"></label>
@@ -91,24 +122,21 @@
         <label>Vignettatura <input id="vignette" type="range" min="0" max="70" step="1"></label>
         <label>Nitidezza <input id="sharpness" type="range" min="0" max="100" step="1"></label>
       </section>
-      <section class="panel" data-panel="text">
-        <label>Dimensione <input id="captionSize" type="range" min="10" max="28" step="1"></label>
-        <label>Colore <input id="captionColor" type="color"></label>
-        <div class="row"><button type="button" data-align="left">Sinistra</button><button type="button" data-align="center">Centro</button><button type="button" data-align="right">Destra</button></div>
-      </section>
-      <footer class="editor-footer">
+
+      <details class="more-actions">
+        <summary>Altre azioni</summary>
         <div class="row">
           <button type="button" id="undoBtn">Annulla</button>
           <button type="button" id="redoBtn">Ripeti</button>
-          <button type="button" id="replaceBtn">Sostituisci</button>
-        </div>
-        <div class="row">
           <button type="button" id="duplicateBtn">Duplica</button>
-          <button type="button" id="deleteBtn">Elimina</button>
           <button type="button" id="downloadJpgBtn">JPG</button>
           <button type="button" id="shareBtn">Condividi</button>
-          <button type="button" id="saveSlotBtn" class="primary">Salva</button>
+          <button type="button" id="deleteBtn">Elimina miniatura</button>
         </div>
+      </details>
+
+      <footer class="editor-footer simple-footer">
+        <button type="button" id="saveSlotBtn" class="primary big-save">Fatto</button>
       </footer>
       <input id="replaceFile" type="file" accept="image/*" hidden>
     </form>
