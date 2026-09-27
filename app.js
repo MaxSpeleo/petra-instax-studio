@@ -6,7 +6,7 @@ const sheet=$('#sheet'), editor=$('#editor'), editorImg=$('#editorImg'), editorW
 const defaults=()=>({
   src:null,x:0,y:0,zoom:1,rotation:0,flipX:1,flipY:1,
   brightness:100,contrast:100,saturation:100,warmth:0,vignette:0,sharpness:0,frameStyle:'none',
-  preset:'Originale',caption:'',captionSize:16,captionColor:'#3b3535',
+  preset:'Originale',caption:'',captionSize:20,captionColor:'#3b3535',
   captionAlign:'center',locked:false,width:0,height:0,history:[],future:[]
 });
 let slots=Array.from({length:N},defaults);
@@ -129,6 +129,19 @@ function redo(){
 function openEditor(i){
   current=i;syncEditor();editor.showModal()
 }
+
+function activateTab(name){
+  $('.tabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));
+  $('.panel').forEach(p=>p.classList.toggle('active',p.dataset.panel===name));
+}
+function selectEditorTarget(target){
+  editorWindow.classList.toggle('selected-editable',target==='photo');
+  const cap=$('#captionInput');
+  if(cap) cap.classList.toggle('selected-editable',target==='text');
+  activateTab(target==='text'?'text':'position');
+}
+editorWindow.addEventListener('click',()=>selectEditorTarget('photo'));
+$('#captionInput').addEventListener('click',()=>selectEditorTarget('text'));
 function syncEditor(){
   if(current<0)return;const s=slots[current];
   editorImg.src=s.src||'';
@@ -178,7 +191,18 @@ $('#duplicateBtn').onclick=()=>{
   slots[empty]={...defaults(),...snapshot(slots[current]),locked:false,history:[],future:[]};render();alert('Miniatura duplicata.')
 };
 $('#deleteBtn').onclick=()=>{if(confirm('Eliminare questa miniatura?')){slots[current]=defaults();editor.close();render()}};
-$('#saveSlotBtn').onclick=()=>{slots[current].locked=true;persist();editor.close();render()};
+$('#saveSlotBtn').onclick=()=>{
+  const s=slots[current];
+  const maxX=editorWindow.clientWidth*.72;
+  const maxY=editorWindow.clientHeight*.72;
+  s.x=Math.max(-maxX,Math.min(maxX,s.x||0));
+  s.y=Math.max(-maxY,Math.min(maxY,s.y||0));
+  s.zoom=Math.max(1,Math.min(3,s.zoom||1));
+  s.locked=true;
+  persist();
+  editor.close();
+  render();
+};
 $('#downloadJpgBtn').onclick=async()=>{const blob=await exportCurrentBlob('image/jpeg');downloadBlob(blob,'petra-instax-mini.jpg')};
 $('#shareBtn').onclick=async()=>{
   const blob=await exportCurrentBlob();const file=new File([blob],'petra-instax-mini.png',{type:'image/png'});
