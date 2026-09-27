@@ -129,7 +129,7 @@ function selectionChanged(e){const t=e.selected?.[0]||canvas.getActiveObject();i
 
 function baseObjects(){
   canvas.clear();canvas.backgroundColor='#f8f6f0';
-  const cap=new fabric.Textbox('Tocca qui per scrivere',{left:50,top:700,width:440,fontSize:34,fontFamily:'Arial',fill:'#aaa6a0',textAlign:'center',originX:'left',originY:'top',name:'caption',isPlaceholder:true,editable:true});
+  const cap=new fabric.Textbox('Tocca qui per scrivere',{left:50,top:700,width:440,fontSize:34,fontFamily:'Arial',fill:'#aaa6a0',textAlign:'center',originX:'left',originY:'top',name:'caption',isPlaceholder:true,editable:false,selectable:false,evented:false});
   cap.setControlsVisibility({mt:false,mb:false,ml:true,mr:true,tl:false,tr:false,bl:false,br:false,mtr:false});
   canvas.add(cap);canvas.requestRenderAll();
 }
@@ -138,6 +138,7 @@ function getPhoto(){return canvas?.getObjects().find(o=>o.name==='photo')}
 function getCaption(){return canvas?.getObjects().find(o=>o.name==='caption')}
 function syncDirectCaption(){
   const t=getCaption(); if(!t||!els.directCaption)return;
+  t.set({editable:false,selectable:false,evented:false});
   const isPlaceholder=!!t.isPlaceholder || t.text==='Tocca qui per scrivere';
   els.directCaption.value=isPlaceholder?'':t.text||'';
   els.directCaption.placeholder='Tocca qui per scrivere';
