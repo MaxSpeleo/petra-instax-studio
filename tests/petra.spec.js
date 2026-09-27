@@ -11,8 +11,9 @@ test('Petra Foto: crea, salva, ricarica ed elimina miniature', async ({ page }) 
   await expect(page.locator('.status-title')).toHaveText('Petra Foto');
 
   // Playwright starts this test in a fresh browser context, so storage is clean.
-  await expect(page.locator('#statusSub')).toContainText('Salvate 0 / 9');
+  await page.waitForTimeout(500);
   expect(errors, errors.join('\n')).toEqual([]);
+  await expect(page.locator('#statusSub')).toContainText('Salvate 0 / 9');
 
   const fixture = path.join(__dirname, 'fixture.svg');
 
