@@ -37,7 +37,10 @@ test('Petra Foto: crea, salva, ricarica ed elimina miniature', async ({ page }) 
   await page.locator('#sheetBtn').click();
   await expect(page.locator('#sheetDialog')).toHaveAttribute('open', '');
   await expect(page.locator('.print-slot')).toHaveCount(9);
-  await expect(page.locator('.print-slot').nth(0).locator('img')).toBeVisible();
+  const firstPrintImg=page.locator('.print-slot').nth(0).locator('img');
+  await expect(firstPrintImg).toBeVisible();
+  const printPx=await firstPrintImg.evaluate(img=>({w:img.naturalWidth,h:img.naturalHeight}));
+  expect(printPx).toEqual({w:638,h:1016});
   await page.locator('#sheetClose').click();
 
   // Mini 2
