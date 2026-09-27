@@ -112,3 +112,7 @@ dialog::backdrop{background:rgba(25,20,20,.55);backdrop-filter:blur(4px)}
 .gallery-thumb img{width:100%;height:100%;object-fit:cover;transform-origin:center}
 .gallery-item span{display:block;font-size:11px;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ui-editing .editable-ui{position:relative}
+
+/* User mode: no app-appearance editing controls */
+body[data-app-mode="user"] #uiEditBtn,
+body[data-app-mode="user"] .ui-editor{display:none!important;}
