@@ -25,6 +25,7 @@ test('Petra Foto: crea, salva, ricarica ed elimina miniature', async ({ page }) 
   await expect(page.locator('#photoEditor')).toHaveAttribute('open', '');
   await expect(page.locator('#directCaptionInput')).toBeVisible();
   await page.locator('#directCaptionInput').fill('Petra uno');
+  await page.locator('.context-tabs button[data-panel="text"]').click();
   await page.locator('#fontFamily').selectOption('Georgia');
   await page.locator('#fontSize').fill('46');
   await page.locator('#saveEditor').click();
