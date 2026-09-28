@@ -1,0 +1,19 @@
+{
+  "name": "Petra Foto",
+  "short_name": "Petra Foto",
+  "description": "Crea e stampa miniature fotografiche in formato Instax Mini.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#090a0a",
+  "theme_color": "#090a0a",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
