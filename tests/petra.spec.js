@@ -15,6 +15,13 @@ test('Petra Foto: crea, salva, condivide vuoto, ricarica ed elimina miniature', 
   expect(errors, errors.join('\n')).toEqual([]);
   await expect(page.locator('#statusSub')).toContainText('Salvate 0 / 9');
 
+  // Production theme selector must work and persist.
+  await expect(page.locator('#themePicker')).toBeVisible();
+  await page.locator('#themePicker summary').click();
+  await page.locator('.theme-swatch[data-accent="#f2a83b"]').click();
+  const accentBefore=await page.evaluate(()=>getComputedStyle(document.documentElement).getPropertyValue('--accent').trim());
+  expect(accentBefore).toBe('#f2a83b');
+
   const fixture = path.join(__dirname, 'fixture.svg');
 
   // Mini 1
@@ -41,6 +48,22 @@ test('Petra Foto: crea, salva, condivide vuoto, ricarica ed elimina miniature', 
   await expect(firstPrintImg).toBeVisible();
   const printPx=await firstPrintImg.evaluate(img=>({w:img.naturalWidth,h:img.naturalHeight}));
   expect(printPx).toEqual({w:638,h:1016});
+
+  // Shared app: native print handoff must be wired to the browser/system print API.
+  await page.evaluate(()=>{window.__printCalls=0;window.print=()=>{window.__printCalls++}});
+  await page.locator('#printA4').click();
+  await expect.poll(()=>page.evaluate(()=>window.__printCalls)).toBe(1);
+
+  // Shared app: Save PDF must create a real downloadable PDF.
+  await expect.poll(()=>page.evaluate(()=>!!window.jspdf?.jsPDF)).toBe(true);
+  const pdfDownloadPromise=page.waitForEvent('download');
+  await page.locator('#savePdfA4').click();
+  const pdfDownload=await pdfDownloadPromise;
+  expect(pdfDownload.suggestedFilename()).toBe('Petra-Foto-A4.pdf');
+  const pdfPath=await pdfDownload.path();
+  const fs=require('fs');
+  expect(fs.readFileSync(pdfPath).subarray(0,5).toString()).toBe('%PDF-');
+
   await page.locator('#sheetClose').click();
 
   // Mini 2
@@ -68,6 +91,8 @@ test('Petra Foto: crea, salva, condivide vuoto, ricarica ed elimina miniature', 
   await page.reload();
   await expect(page.locator('#statusSub')).toContainText('Salvate 2 / 9');
   await expect(page.locator('#mainImg')).toBeVisible();
+  const accentAfterReload=await page.evaluate(()=>getComputedStyle(document.documentElement).getPropertyValue('--accent').trim());
+  expect(accentAfterReload).toBe('#f2a83b');
 
   // Re-open first mini: caption content and chosen font must survive reload.
   await page.locator('#mainCard').click();

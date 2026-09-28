@@ -4,9 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#090a0a">
-  <meta name="petra-build" content="35">
+  <meta name="petra-build" content="36">
   <title>Petra Foto</title>
-  <link rel="stylesheet" href="user-v2.css?v=35">
+  <link rel="stylesheet" href="user-v2.css?v=36">
+  <link rel="stylesheet" href="instax-theme.css?v=1">
 </head>
 <body data-app-mode="user">
   <main class="app">
@@ -16,6 +17,15 @@
         <div class="brand">petrafoto.</div>
       </div>
       <div class="top-actions">
+        <details class="theme-picker" id="themePicker">
+          <summary aria-label="Scegli colore pulsanti"><span class="theme-picker-dot"></span></summary>
+          <div class="theme-picker-menu" role="group" aria-label="Colore accento">
+            <button class="theme-swatch active" data-accent="#28e0be" aria-label="Turchese"></button>
+            <button class="theme-swatch" data-accent="#f08aad" aria-label="Rosa"></button>
+            <button class="theme-swatch" data-accent="#f2a83b" aria-label="Ambra"></button>
+            <button class="theme-swatch" data-accent="#f0f3f2" aria-label="Bianco"></button>
+          </div>
+        </details>
         <button id="clearAllBtn" class="circle-btn" aria-label="Svuota foglio">≡</button>
         <button id="historyBtn" class="circle-btn" aria-label="Cronologia">↶</button>
       </div>
@@ -154,7 +164,7 @@
     <section class="sheet-preview">
       <header class="sheet-head">
         <h2>Foglio A4 · 9 Mini</h2>
-        <div class="sheet-head-actions"><button id="printA4" type="button">Stampa / PDF</button><button id="sheetClose" type="button">Chiudi</button></div>
+        <div class="sheet-head-actions"><button id="printA4" type="button">Stampa</button><button id="savePdfA4" type="button">Salva PDF</button><button id="sheetClose" type="button">Chiudi</button></div>
       </header>
       <div class="a4-screen"><div id="a4" class="a4"></div></div>
     </section>
@@ -164,6 +174,26 @@
   <div id="toast" class="toast"></div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js" referrerpolicy="no-referrer"></script>
-  <script src="user-v2.js?v=35"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" referrerpolicy="no-referrer"></script>
+  <script src="user-v2.js?v=36"></script>
+  <script>
+    (function(){
+      const KEY='petra-theme-accent';
+      const allowed=['#28e0be','#f08aad','#f2a83b','#f0f3f2'];
+      const apply=(accent)=>{
+        if(!allowed.includes(accent)) accent=allowed[0];
+        document.documentElement.style.setProperty('--accent',accent);
+        document.documentElement.style.setProperty('--accent-soft',accent+'24');
+        document.querySelectorAll('.theme-swatch').forEach(x=>x.classList.toggle('active',x.dataset.accent===accent));
+      };
+      apply(localStorage.getItem(KEY)||allowed[0]);
+      document.querySelectorAll('.theme-swatch').forEach(btn=>btn.addEventListener('click',e=>{
+        e.preventDefault();e.stopPropagation();
+        apply(btn.dataset.accent);
+        localStorage.setItem(KEY,btn.dataset.accent);
+        document.getElementById('themePicker')?.removeAttribute('open');
+      }));
+    })();
+  </script>
 </body>
 </html>
