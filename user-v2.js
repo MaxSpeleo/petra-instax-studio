@@ -182,6 +182,120 @@ function baseObjects(){
 function setPlaceholder(t){t.text='Tocca qui per scrivere';t.fill='#aaa6a0';t.isPlaceholder=true}
 function getPhoto(){return canvas?.getObjects().find(o=>o.name==='photo')}
 function getCaption(){return canvas?.getObjects().find(o=>o.name==='caption')}
+function getFrameObjects(){return canvas?.getObjects().filter(o=>o.name==='frame')||[]}
+function currentFrameStyle(){return getFrameObjects()[0]?.frameStyle||'classic'}
+function updateFrameButtons(style=currentFrameStyle()){
+  $('.frame-option').forEach(b=>b.classList.toggle('active',b.dataset.frame===style));
+}
+function clearFrameObjects(){getFrameObjects().forEach(o=>canvas.remove(o))}
+function frameRect(opts,style){
+  const o=new fabric.Rect({...opts,selectable:false,evented:false,name:'frame',frameStyle:style,strokeWidth:0});
+  canvas.add(o);canvas.sendToBack(o);return o;
+}
+function frameText(text,left,top,fill,style,size=18,weight='bold'){
+  const o=new fabric.Text(text,{left,top,fontSize:size,fontFamily:'Arial',fontWeight:weight,fill,selectable:false,evented:false,name:'frame',frameStyle:style,originX:'center',originY:'center'});
+  canvas.add(o);canvas.sendToBack(o);return o;
+}
+function frameDot(left,top,fill,style,r=5){
+  const o=new fabric.Circle({left,top,radius:r,fill,selectable:false,evented:false,name:'frame',frameStyle:style,originX:'center',originY:'center'});
+  canvas.add(o);canvas.sendToBack(o);return o;
+}
+function frameLine(points,stroke,style,width=3){
+  const o=new fabric.Line(points,{stroke,strokeWidth:width,selectable:false,evented:false,name:'frame',frameStyle:style});
+  canvas.add(o);canvas.sendToBack(o);return o;
+}
+function frameBars(fill,style){
+  frameRect({left:0,top:0,width:W,height:PHOTO.y,fill},style);
+  frameRect({left:0,top:PHOTO.y,width:PHOTO.x,height:PHOTO.h,fill},style);
+  frameRect({left:PHOTO.x+PHOTO.w,top:PHOTO.y,width:W-(PHOTO.x+PHOTO.w),height:PHOTO.h,fill},style);
+  frameRect({left:0,top:PHOTO.y+PHOTO.h,width:W,height:H-(PHOTO.y+PHOTO.h),fill},style);
+}
+function frameSegments(colors,style){
+  const topY=0,bottomY=PHOTO.y+PHOTO.h;
+  const count=9,segW=W/count;
+  for(let i=0;i<count;i++){
+    frameRect({left:i*segW,top:topY,width:segW+1,height:PHOTO.y,fill:colors[i%colors.length]},style);
+    frameRect({left:i*segW,top:bottomY,width:segW+1,height:H-bottomY,fill:colors[(i+2)%colors.length]},style);
+  }
+  const countY=7,segH=PHOTO.h/countY;
+  for(let i=0;i<countY;i++){
+    frameRect({left:0,top:PHOTO.y+i*segH,width:PHOTO.x,height:segH+1,fill:colors[(i+1)%colors.length]},style);
+    frameRect({left:PHOTO.x+PHOTO.w,top:PHOTO.y+i*segH,width:W-(PHOTO.x+PHOTO.w),height:segH+1,fill:colors[(i+3)%colors.length]},style);
+  }
+}
+function restoreFrameLayering(){
+  const p=getPhoto(),cap=getCaption();
+  if(p)canvas.bringToFront(p);
+  if(cap)canvas.bringToFront(cap);
+}
+function applyFrame(style='classic',record=true){
+  clearFrameObjects();
+  const white='#f8f6f0';
+  if(style==='black'){
+    frameBars('#151515',style);
+  }else if(style==='hearts'){
+    frameBars(white,style);
+    [70,150,230,310,390,470].forEach((x,i)=>frameText(i%2?'♡':'♥',x,24,i%2?'#f49ab2':'#e84f77',style,i%2?18:20));
+    [120,230,340,450,560].forEach((y,i)=>{frameText(i%2?'♡':'♥',19,y,'#ee6d92',style,16);frameText(i%2?'♥':'♡',521,y,'#f29bb4',style,16)});
+    [70,145,385,465].forEach((x,i)=>frameText(i%2?'♡':'♥',x,823,'#ec6d92',style,18));
+  }else if(style==='confetti'){
+    frameBars('#fffdf8',style);
+    const cols=['#74c9ef','#f7cb58','#ee9eb4','#89d8b7','#b897df'];
+    const pts=[[62,23,6],[118,18,4],[178,28,5],[250,18,7],[330,27,4],[400,19,6],[475,26,5],[18,130,5],[20,240,7],[18,355,4],[20,500,6],[520,145,6],[520,280,4],[520,430,7],[520,590,5],[60,817,6],[125,835,4],[205,812,7],[330,832,5],[410,812,7],[480,835,4]];
+    pts.forEach((p,i)=>frameDot(p[0],p[1],cols[i%cols.length],style,p[2]));
+    [92,284,452].forEach((x,i)=>frameText(i===1?'★':'♥',x,825,cols[(i+2)%cols.length],style,17));
+  }else if(style==='rainbow'){
+    frameSegments(['#ff819d','#ffd765','#b7ec81','#78e1d8','#77b7f5','#b38bdf','#f29ad2'],style);
+  }else if(style==='marble'){
+    frameBars('#cfe9fa',style);
+    const gold='#d7b36c';
+    [[0,20,170,0],[100,48,240,0],[320,48,470,0],[365,860,500,695],[0,790,160,690],[0,175,38,145],[0,395,38,360],[502,230,540,195],[502,520,540,480]].forEach(p=>frameLine(p,gold,style,2));
+    [[25,0,70,50],[210,0,250,50],[410,0,445,50],[0,700,40,655],[500,720,540,680]].forEach(p=>frameLine(p,'#ffffff',style,3));
+  }else if(style==='stars'){
+    frameBars('#fff8e8',style);
+    const cols=['#d5a11b','#b7c9f5','#ef9db4','#c6a5e9'];
+    [65,135,205,275,345,415,485].forEach((x,i)=>frameText(i%2?'★':'✦',x,24,cols[i%cols.length],style,i%2?15:21));
+    [125,255,385,520,620].forEach((y,i)=>{frameText('★',19,y,cols[(i+1)%cols.length],style,16);frameText('✦',521,y,cols[(i+2)%cols.length],style,18)});
+    [75,150,390,470].forEach((x,i)=>frameText(i%2?'✦':'★',x,825,cols[(i+3)%cols.length],style,19));
+  }else if(style==='comic'){
+    frameBars('#ffd923',style);
+    frameRect({left:165,top:0,width:165,height:PHOTO.y,fill:'#18a9e8'},style);
+    frameRect({left:330,top:0,width:210,height:PHOTO.y,fill:'#ef4145'},style);
+    frameRect({left:0,top:PHOTO.y,width:PHOTO.x,height:210,fill:'#18a9e8'},style);
+    frameRect({left:0,top:PHOTO.y+210,width:PHOTO.x,height:205,fill:'#ef4145'},style);
+    frameRect({left:PHOTO.x+PHOTO.w,top:PHOTO.y+80,width:40,height:220,fill:'#ef4145'},style);
+    frameText('★',88,24,'#111',style,24);
+    frameText('!',470,24,'#fff',style,27);
+    frameText('!!',520,210,'#fff',style,22);
+    frameText('★',20,585,'#111',style,22);
+    frameText('!',455,815,'#111',style,30);
+  }else if(style==='airmail'){
+    frameBars('#fffdf9',style);
+    const colors=['#e92835','#173f84'];
+    const step=48;
+    for(let x=0,i=0;x<W;x+=step,i++){
+      frameRect({left:x-4,top:3,width:30,height:11,angle:-28,fill:colors[i%2]},style);
+      frameRect({left:x-4,top:836,width:30,height:11,angle:-28,fill:colors[(i+1)%2]},style);
+    }
+    for(let y=70,i=0;y<700;y+=64,i++){
+      frameRect({left:4,top:y,width:30,height:10,angle:-28,fill:colors[i%2]},style);
+      frameRect({left:507,top:y,width:30,height:10,angle:-28,fill:colors[(i+1)%2]},style);
+    }
+  }else if(style==='petra'){
+    frameBars('#fff0da',style);
+    const cols=['#efabb9','#8fceb5','#f0c465','#b9acd9'];
+    const dots=[[60,24,6],[110,18,4],[165,30,5],[380,18,5],[430,28,7],[485,18,4],[18,125,5],[20,260,4],[18,420,6],[20,590,4],[520,145,5],[520,330,6],[520,560,4],[68,812,5],[115,833,4],[390,825,6],[455,810,4]];
+    dots.forEach((p,i)=>frameDot(p[0],p[1],cols[i%cols.length],style,p[2]));
+    [90,450].forEach((x,i)=>frameText(i?'♡':'♥',x,825,cols[i],style,17));
+    frameText('PETRA',270,825,'#d4868b',style,18,'bold');
+    frameText('☾',470,800,'#e5b76b',style,25);
+  }
+  restoreFrameLayering();
+  canvas.requestRenderAll();
+  updateFrameButtons(style);
+  dirty=true;
+  if(record)recordHistory();
+}
 function syncDirectCaption(){
   const t=getCaption(); if(!t||!els.directCaption)return;
   t.set({editable:false,selectable:false,evented:false});
@@ -227,6 +341,7 @@ async function openEditor(i,newSrc=null){
   if(newSrc)await addPhoto(newSrc);
   $('#editorMeta').textContent='Mini '+(i+1)+' di '+N;
   syncDirectCaption();
+  updateFrameButtons();
   els.editor.showModal();showPanel(getPhoto()?'photo':'text');
 }
 function closeEditor(){
@@ -235,20 +350,21 @@ function closeEditor(){
 }
 $('#editorClose').onclick=closeEditor;
 
-function serialize(){return canvas.toJSON(['name','originalSrc','photoPreset','petraBrightness','petraContrast','isPlaceholder'])}
+function serialize(){return canvas.toJSON(['name','originalSrc','photoPreset','petraBrightness','petraContrast','isPlaceholder','frameStyle'])}
 function recordHistory(force=false){
   if(historyLock)return;const snap=JSON.stringify(serialize());
   if(!force&&history[historyIndex]===snap)return;
   history=history.slice(0,historyIndex+1);history.push(snap);if(history.length>20)history.shift();historyIndex=history.length-1;
 }
-async function loadHistory(idx){if(idx<0||idx>=history.length)return;historyLock=true;await new Promise(res=>canvas.loadFromJSON(history[idx],()=>{canvas.renderAll();res()}));historyLock=false;historyIndex=idx;dirty=true;syncDirectCaption()}
+async function loadHistory(idx){if(idx<0||idx>=history.length)return;historyLock=true;await new Promise(res=>canvas.loadFromJSON(history[idx],()=>{canvas.renderAll();res()}));historyLock=false;historyIndex=idx;dirty=true;syncDirectCaption();updateFrameButtons()}
 $('#undoBtn').onclick=()=>loadHistory(historyIndex-1);$('#redoBtn').onclick=()=>loadHistory(historyIndex+1);
 
 function showPanel(name){
   $$('.context-tabs button').forEach(b=>b.classList.toggle('active',b.dataset.panel===name));
   $$('.panel').forEach(p=>p.classList.toggle('active',p.dataset.panel===name));
 }
-$$('.context-tabs button').forEach(b=>b.onclick=()=>showPanel(b.dataset.panel));
+$('.context-tabs button').forEach(b=>b.onclick=()=>showPanel(b.dataset.panel));
+$('.frame-option').forEach(b=>b.onclick=()=>{applyFrame(b.dataset.frame);showPanel('frame')});
 
 $('#replacePhoto').onclick=()=>{els.file.value='';els.file.onchange=async()=>{const f=els.file.files?.[0];if(f){await addPhoto(await fileData(f));showPanel('photo')}};els.file.click()};
 $('#deletePhoto').onclick=()=>{const p=getPhoto();if(!p)return;if(confirm('Eliminare la foto da questa miniatura?')){canvas.remove(p);canvas.discardActiveObject();canvas.requestRenderAll();dirty=true;recordHistory();showPanel('text')}};
