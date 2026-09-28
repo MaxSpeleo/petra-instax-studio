@@ -301,3 +301,31 @@ test('Build 38 mobile: five tabs stay visible and photo supports drag + pinch zo
   expect(photo.left).not.toBe(270);
   expect(errors,errors.join('\n')).toEqual([]);
 });
+
+
+test('Build 39 PWA: clean root is installable shell', async ({ page, request }) => {
+  const errors=[];
+  page.on('pageerror',e=>errors.push('PAGE: '+e.message));
+  page.on('console',m=>{if(m.type()==='error')errors.push('CONSOLE: '+m.text())});
+
+  await page.goto('http://127.0.0.1:4173/');
+  await expect(page).toHaveURL('http://127.0.0.1:4173/');
+
+  const manifestHref=await page.locator('link[rel="manifest"]').getAttribute('href');
+  expect(manifestHref).toBe('manifest.webmanifest');
+  await expect(page.locator('meta[name="apple-mobile-web-app-capable"]')).toHaveAttribute('content','yes');
+  await expect(page.locator('meta[name="apple-mobile-web-app-title"]')).toHaveAttribute('content','Petra Foto');
+
+  const manifestResp=await request.get('http://127.0.0.1:4173/manifest.webmanifest');
+  expect(manifestResp.ok()).toBe(true);
+  const manifest=await manifestResp.json();
+  expect(manifest.name).toBe('Petra Foto');
+  expect(manifest.start_url).toBe('./');
+  expect(manifest.display).toBe('standalone');
+
+  const swResp=await request.get('http://127.0.0.1:4173/sw.js');
+  expect(swResp.ok()).toBe(true);
+
+  await page.waitForTimeout(600);
+  expect(errors,errors.join('\n')).toEqual([]);
+});
