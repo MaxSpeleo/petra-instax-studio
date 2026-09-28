@@ -123,5 +123,35 @@ test('Theme preview: isolated, functional and does not alter shared app', async 
 
   await expect(page.locator('#addPhotoBtn')).toBeVisible();
   await expect(page.locator('#sheetBtn')).toBeVisible();
+
+  // Add one deterministic Mini in the isolated preview.
+  const fixture=path.join(__dirname,'fixture.svg');
+  let chooserPromise=page.waitForEvent('filechooser');
+  await page.locator('#addPhotoBtn').click();
+  let chooser=await chooserPromise;
+  await chooser.setFiles(fixture);
+  await expect(page.locator('#photoEditor')).toHaveAttribute('open','');
+  await page.locator('#directCaptionInput').fill('PDF prova');
+  await page.locator('#saveEditor').click();
+  await expect(page.locator('#photoEditor')).not.toHaveAttribute('open','');
+
+  // Print must invoke the browser/system print API, which hands off to the phone/PC print service.
+  await page.locator('#sheetBtn').click();
+  await expect(page.locator('#sheetDialog')).toHaveAttribute('open','');
+  await page.evaluate(()=>{window.__printCalls=0;window.print=()=>{window.__printCalls++}});
+  await page.locator('#printA4').click();
+  await expect.poll(()=>page.evaluate(()=>window.__printCalls)).toBe(1);
+
+  // PDF must be generated as a real downloadable PDF, independently of printing.
+  await expect.poll(()=>page.evaluate(()=>!!window.jspdf?.jsPDF)).toBe(true);
+  const downloadPromise=page.waitForEvent('download');
+  await page.locator('#savePdfA4').click();
+  const download=await downloadPromise;
+  expect(download.suggestedFilename()).toBe('Petra-Foto-A4.pdf');
+  const p=await download.path();
+  const fs=require('fs');
+  const head=fs.readFileSync(p).subarray(0,5).toString();
+  expect(head).toBe('%PDF-');
+
   expect(errors,errors.join('\n')).toEqual([]);
 });
