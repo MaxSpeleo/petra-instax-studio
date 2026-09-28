@@ -96,7 +96,33 @@ $('#mainCard').onclick=()=>currentSlot()?.preview?openEditor(current):choosePhot
 $('#addPhotoBtn').onclick=()=>currentSlot()?.preview?openEditor(current):choosePhoto(current);
 $('#galleryBtn').onclick=()=>openLibrary(false);$('#historyBtn').onclick=()=>openLibrary(true);
 $('#sheetBtn').onclick=()=>{renderA4();els.sheet.showModal()};
-$('#sheetClose').onclick=()=>els.sheet.close();$('#printA4').onclick=()=>window.print();
+$('#sheetClose').onclick=()=>els.sheet.close();$('#printA4').onclick=()=>{renderA4();window.print()};
+async function savePdfA4(){
+  try{
+    const filled=slots.filter(s=>s?.preview).length;
+    if(!filled){toast('Aggiungi almeno una miniatura');return}
+    const JsPDF=window.jspdf?.jsPDF;
+    if(!JsPDF){toast('Modulo PDF non disponibile');return}
+    const pdf=new JsPDF({orientation:'portrait',unit:'mm',format:'a4',compress:true});
+    const left=16, top=12.5, colStep=62, rowStep=93;
+    pdf.setDrawColor(185,185,185);
+    pdf.setLineWidth(.15);
+    if(pdf.setLineDashPattern)pdf.setLineDashPattern([1,1],0);
+    for(let i=0;i<N;i++){
+      const col=i%3,row=Math.floor(i/3);
+      const x=left+col*colStep,y=top+row*rowStep;
+      pdf.rect(x,y,54,86);
+      const s=slots[i];
+      if(s?.preview)pdf.addImage(s.preview,'JPEG',x,y,54,86,undefined,'FAST');
+    }
+    pdf.save('Petra-Foto-A4.pdf');
+    toast('PDF salvato');
+  }catch(e){
+    console.error('PDF export failed',e);
+    toast('Errore creazione PDF');
+  }
+}
+$('#savePdfA4').onclick=savePdfA4;
 $('#clearAllBtn').onclick=async()=>{if(!confirm('Svuotare tutte le 9 miniature?'))return;slots=Array.from({length:N},()=>null);renderMain();renderA4();toast('Foglio svuotato');try{await safeClear()}catch(e){toast('Foglio svuotato solo per questa sessione')}};
 
 function openLibrary(historyMode){
