@@ -302,7 +302,7 @@ async function loadHistory(idx){if(idx<0||idx>=history.length)return;historyLock
 $('#undoBtn').onclick=()=>loadHistory(historyIndex-1);$('#redoBtn').onclick=()=>loadHistory(historyIndex+1);
 
 function showPanel(name){
-  $('.context-tabs button').forEach(b=>b.classList.toggle('active',b.dataset.panel===name));
+  $$('.context-tabs button').forEach(b=>b.classList.toggle('active',b.dataset.panel===name));
   $$('.panel').forEach(p=>p.classList.toggle('active',p.dataset.panel===name));
 }
 $$('.context-tabs button').forEach(b=>b.onclick=()=>showPanel(b.dataset.panel));
