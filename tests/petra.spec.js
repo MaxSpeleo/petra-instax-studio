@@ -15,6 +15,13 @@ test('Petra Foto: crea, salva, condivide vuoto, ricarica ed elimina miniature', 
   expect(errors, errors.join('\n')).toEqual([]);
   await expect(page.locator('#statusSub')).toContainText('Salvate 0 / 9');
 
+  // Production theme selector must work and persist.
+  await expect(page.locator('#themePicker')).toBeVisible();
+  await page.locator('#themePicker summary').click();
+  await page.locator('.theme-swatch[data-accent="#f2a83b"]').click();
+  const accentBefore=await page.evaluate(()=>getComputedStyle(document.documentElement).getPropertyValue('--accent').trim());
+  expect(accentBefore).toBe('#f2a83b');
+
   const fixture = path.join(__dirname, 'fixture.svg');
 
   // Mini 1
