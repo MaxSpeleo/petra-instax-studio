@@ -234,3 +234,70 @@ test('Frames preview: applies and persists decorative border without touching pr
 
   expect(errors,errors.join('\n')).toEqual([]);
 });
+
+
+test('Build 38 mobile: five tabs stay visible and photo supports drag + pinch zoom', async ({ page }) => {
+  const errors=[];
+  page.on('pageerror',e=>errors.push('PAGE: '+e.message));
+  page.on('console',m=>{if(m.type()==='error')errors.push('CONSOLE: '+m.text())});
+  await page.goto('http://127.0.0.1:4173/?workspace=gesture-qa');
+  await expect(page.locator('#statusSub')).toContainText('Salvate 0 / 9');
+
+  const fixture=path.join(__dirname,'fixture.svg');
+  const chooserPromise=page.waitForEvent('filechooser');
+  await page.locator('#addPhotoBtn').click();
+  const chooser=await chooserPromise;
+  await chooser.setFiles(fixture);
+  await expect(page.locator('#photoEditor')).toHaveAttribute('open','');
+
+  await expect(page.locator('.context-tabs button')).toHaveCount(5);
+  const tabsFit=await page.evaluate(()=>{
+    const nav=document.querySelector('.context-tabs').getBoundingClientRect();
+    return [...document.querySelectorAll('.context-tabs button')].every(b=>{
+      const r=b.getBoundingClientRect();
+      return r.left>=nav.left-1 && r.right<=nav.right+1 && r.top>=nav.top-1 && r.bottom<=nav.bottom+1;
+    });
+  });
+  expect(tabsFit).toBe(true);
+
+  const upper=page.locator('.upper-canvas');
+  await expect(upper).toBeVisible();
+  const box=await upper.boundingBox();
+  const cx=box.x+box.width*.5, cy=box.y+box.height*.42;
+
+  // One-finger drag.
+  await page.evaluate(({cx,cy})=>{
+    const el=document.querySelector('.upper-canvas');
+    const fire=(type,id,x,y)=>el.dispatchEvent(new PointerEvent(type,{bubbles:true,cancelable:true,pointerId:id,pointerType:'touch',clientX:x,clientY:y,isPrimary:true}));
+    fire('pointerdown',1,cx,cy);
+    fire('pointermove',1,cx+34,cy+22);
+    fire('pointerup',1,cx+34,cy+22);
+  },{cx,cy});
+
+  // Two-finger pinch out.
+  await page.evaluate(({cx,cy})=>{
+    const el=document.querySelector('.upper-canvas');
+    const fire=(type,id,x,y,primary=false)=>el.dispatchEvent(new PointerEvent(type,{bubbles:true,cancelable:true,pointerId:id,pointerType:'touch',clientX:x,clientY:y,isPrimary:primary}));
+    fire('pointerdown',11,cx-30,cy,true);
+    fire('pointerdown',12,cx+30,cy,false);
+    fire('pointermove',11,cx-65,cy,true);
+    fire('pointermove',12,cx+65,cy,false);
+    fire('pointerup',11,cx-65,cy,true);
+    fire('pointerup',12,cx+65,cy,false);
+  },{cx,cy});
+
+  const zoom=Number(await page.locator('#zoomPhoto').inputValue());
+  expect(zoom).toBeGreaterThan(1.2);
+
+  await page.locator('#saveEditor').click();
+  await expect(page.locator('#photoEditor')).not.toHaveAttribute('open','');
+
+  const state=await page.evaluate(async()=>{
+    const db=await new Promise((res,rej)=>{const r=indexedDB.open('petra-instax-studio-v2-gesture-qa');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
+    return await new Promise((res,rej)=>{const tx=db.transaction('slots','readonly');const r=tx.objectStore('slots').get(0);r.onsuccess=()=>res(r.result?.state);r.onerror=()=>rej(r.error)});
+  });
+  const photo=state.objects.find(o=>o.name==='photo');
+  expect(photo.scaleX).toBeGreaterThan(0);
+  expect(photo.left).not.toBe(270);
+  expect(errors,errors.join('\n')).toEqual([]);
+});
