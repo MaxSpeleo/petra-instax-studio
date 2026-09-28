@@ -1,0 +1,31 @@
+.frames-preview-banner{
+  display:flex;justify-content:space-between;align-items:center;gap:10px;
+  margin:4px 0 10px;padding:10px 12px;border:1px solid #242827;border-radius:14px;
+  background:#0b0d0d;color:#fff;font-size:12px
+}
+.frames-preview-banner span{color:#929795;font-size:11px}
+.frame-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.frame-option{
+  min-height:92px;padding:8px;border:1px solid #343938;border-radius:14px;background:#111313;color:#fff;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;font-size:11px
+}
+.frame-option.active{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent-soft) inset}
+.frame-mini{
+  width:35px;height:56px;border-radius:3px;background:#fff;border:2px solid #fff;
+  box-shadow:0 0 0 1px rgba(255,255,255,.2);display:grid;place-items:center;color:#222;font-size:16px
+}
+.frame-mini:before{content:"";width:27px;height:36px;background:#545a58;display:block}
+.frame-mini.pink{background:#f7c9d9;border-color:#f7c9d9}
+.frame-mini.aqua{background:#bfeee7;border-color:#bfeee7}
+.frame-mini.hearts,.frame-mini.stars,.frame-mini.petra{position:relative;overflow:hidden}
+.frame-mini.hearts:after,.frame-mini.stars:after,.frame-mini.petra:after{
+  position:absolute;left:3px;right:3px;bottom:2px;text-align:center;font-size:11px
+}
+.frame-mini.hearts:after{content:"♥  ♥";color:#e26b8d}
+.frame-mini.stars:after{content:"★  ★";color:#e0b545}
+.frame-mini.petra:after{content:"PETRA";font-size:7px;letter-spacing:.08em;color:#58bfae}
+@media(max-width:520px){
+  .frames-preview-banner{align-items:flex-start;flex-direction:column}
+  .frame-grid{grid-template-columns:repeat(3,1fr)}
+  .frame-option{min-height:84px}
+}

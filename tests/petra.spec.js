@@ -180,3 +180,48 @@ test('Theme preview: isolated, functional and does not alter shared app', async 
 
   expect(errors,errors.join('\n')).toEqual([]);
 });
+
+
+test('Frames preview: applies and persists decorative border without touching production app', async ({ page }) => {
+  const errors=[];
+  page.on('pageerror',e=>errors.push('PAGE: '+e.message));
+  page.on('console',m=>{if(m.type()==='error')errors.push('CONSOLE: '+m.text())});
+  await page.goto('http://127.0.0.1:4173/frames-preview.html?workspace=frames-qa');
+  await expect(page.locator('.frames-preview-banner')).toBeVisible();
+  await expect(page.locator('#statusSub')).toContainText('Salvate 0 / 9');
+
+  const fixture=path.join(__dirname,'fixture.svg');
+  const chooserPromise=page.waitForEvent('filechooser');
+  await page.locator('#addPhotoBtn').click();
+  const chooser=await chooserPromise;
+  await chooser.setFiles(fixture);
+  await page.waitForTimeout(500);
+  expect(errors,errors.join('\n')).toEqual([]);
+  await expect(page.locator('#photoEditor')).toHaveAttribute('open','');
+
+  await page.locator('.context-tabs button[data-panel="frame"]').click();
+  await expect(page.locator('.frame-grid')).toBeVisible();
+  await page.locator('.frame-option[data-frame="hearts"]').click();
+  await expect(page.locator('.frame-option[data-frame="hearts"]')).toHaveClass(/active/);
+
+  await page.locator('#saveEditor').click();
+  await expect(page.locator('#photoEditor')).not.toHaveAttribute('open','');
+  await expect(page.locator('#statusSub')).toContainText('Salvate 1 / 9');
+
+  // Border choice must survive reload because it is part of the Mini state.
+  await page.reload();
+  await page.locator('#mainCard').click();
+  await expect(page.locator('#photoEditor')).toHaveAttribute('open','');
+  await page.locator('.context-tabs button[data-panel="frame"]').click();
+  await expect(page.locator('.frame-option[data-frame="hearts"]')).toHaveClass(/active/);
+
+  // Saved raster with the frame must be present in the A4 sheet.
+  await page.locator('#editorClose').click();
+  await page.locator('#sheetBtn').click();
+  const img=page.locator('.print-slot').nth(0).locator('img');
+  await expect(img).toBeVisible();
+  const px=await img.evaluate(i=>({w:i.naturalWidth,h:i.naturalHeight}));
+  expect(px).toEqual({w:638,h:1016});
+
+  expect(errors,errors.join('\n')).toEqual([]);
+});
