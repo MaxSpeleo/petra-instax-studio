@@ -195,6 +195,8 @@ test('Frames preview: applies and persists decorative border without touching pr
   await page.locator('#addPhotoBtn').click();
   const chooser=await chooserPromise;
   await chooser.setFiles(fixture);
+  await page.waitForTimeout(500);
+  expect(errors,errors.join('\n')).toEqual([]);
   await expect(page.locator('#photoEditor')).toHaveAttribute('open','');
 
   await page.locator('.context-tabs button[data-panel="frame"]').click();
