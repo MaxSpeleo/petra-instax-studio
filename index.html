@@ -4,10 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#090a0a">
-  <meta name="petra-build" content="36">
+  <meta name="petra-build" content="37">
   <title>Petra Foto</title>
-  <link rel="stylesheet" href="user-v2.css?v=36">
-  <link rel="stylesheet" href="instax-theme.css?v=1">
+  <link rel="stylesheet" href="user-v2.css?v=37">
+  <link rel="stylesheet" href="instax-theme.css?v=2">
 </head>
 <body data-app-mode="user">
   <main class="app">
@@ -87,6 +87,7 @@
             <button type="button" data-panel="photo" class="active">Foto</button>
             <button type="button" data-panel="text">Testo</button>
             <button type="button" data-panel="filters">Filtri</button>
+            <button type="button" data-panel="frame">Cornice</button>
             <button type="button" data-panel="adjust">Regola</button>
           </nav>
 
@@ -136,6 +137,21 @@
             </div>
           </section>
 
+          <section class="panel" data-panel="frame">
+            <div class="frame-grid" role="group" aria-label="Catalogo cornici Mini">
+              <button class="frame-option active" type="button" data-frame="classic"><span class="frame-mini classic"></span><b>White</b></button>
+              <button class="frame-option" type="button" data-frame="black"><span class="frame-mini black"></span><b>Black</b></button>
+              <button class="frame-option" type="button" data-frame="hearts"><span class="frame-mini hearts">♥</span><b>Hearts</b></button>
+              <button class="frame-option" type="button" data-frame="confetti"><span class="frame-mini confetti"></span><b>Confetti</b></button>
+              <button class="frame-option" type="button" data-frame="rainbow"><span class="frame-mini rainbow"></span><b>Rainbow</b></button>
+              <button class="frame-option" type="button" data-frame="marble"><span class="frame-mini marble"></span><b>Marble</b></button>
+              <button class="frame-option" type="button" data-frame="stars"><span class="frame-mini stars">★</span><b>Stars</b></button>
+              <button class="frame-option" type="button" data-frame="comic"><span class="frame-mini comic">!</span><b>Comic</b></button>
+              <button class="frame-option" type="button" data-frame="airmail"><span class="frame-mini airmail"></span><b>Airmail</b></button>
+              <button class="frame-option" type="button" data-frame="petra"><span class="frame-mini petra">P</span><b>Petra Baby</b></button>
+            </div>
+          </section>
+
           <section class="panel" data-panel="adjust">
             <div class="control-grid">
               <label>Luminosità</label><input id="brightness" type="range" min="-45" max="45" value="0">
@@ -175,7 +191,7 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js" referrerpolicy="no-referrer"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" referrerpolicy="no-referrer"></script>
-  <script src="user-v2.js?v=36"></script>
+  <script src="user-v2.js?v=37"></script>
   <script>
     (function(){
       const KEY='petra-theme-accent';

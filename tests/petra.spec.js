@@ -35,6 +35,13 @@ test('Petra Foto: crea, salva, condivide vuoto, ricarica ed elimina miniature', 
   await page.locator('.context-tabs button[data-panel="text"]').click();
   await page.locator('#fontFamily').selectOption('Georgia');
   await page.locator('#fontSize').fill('46');
+
+  // Production frame catalog: all ten styles must be present and applicable.
+  await page.locator('.context-tabs button[data-panel="frame"]').click();
+  await expect(page.locator('.frame-option')).toHaveCount(10);
+  await page.locator('.frame-option[data-frame="comic"]').click();
+  await expect(page.locator('.frame-option[data-frame="comic"]')).toHaveClass(/active/);
+
   await page.locator('#saveEditor').click();
   await expect(page.locator('#photoEditor')).not.toHaveAttribute('open', '');
   await expect(page.locator('#statusSub')).toContainText('Salvate 1 / 9');
@@ -98,6 +105,8 @@ test('Petra Foto: crea, salva, condivide vuoto, ricarica ed elimina miniature', 
   await page.locator('#mainCard').click();
   await expect(page.locator('#directCaptionInput')).toHaveValue('Petra uno');
   await expect(page.locator('#directCaptionInput')).toHaveCSS('font-family', /Georgia/i);
+  await page.locator('.context-tabs button[data-panel="frame"]').click();
+  await expect(page.locator('.frame-option[data-frame="comic"]')).toHaveClass(/active/);
 
   // Core editor controls must all fit in the mobile viewport without page scrolling.
   const fit = await page.evaluate(() => {
