@@ -112,3 +112,64 @@ input[type=range]{accent-color:var(--accent)}
 .theme-picker-menu .theme-swatch[data-accent="#f2a83b"]{background:#f2a83b}
 .theme-picker-menu .theme-swatch[data-accent="#f0f3f2"]{background:#f0f3f2}
 .theme-picker-menu .theme-swatch.active{outline:2px solid #fff;outline-offset:2px}
+
+
+/* Build 37 — production frame catalog */
+.frame-grid{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;
+  max-height:230px;overflow:auto;padding:2px 2px 8px
+}
+.frame-option{
+  min-height:94px;padding:8px;border:1px solid #343938;border-radius:14px;background:#111313;color:#fff;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;font-size:11px
+}
+.frame-option.active{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent-soft) inset}
+.frame-option b{font-size:11px;font-weight:700}
+.frame-mini{
+  width:36px;height:58px;border-radius:3px;position:relative;overflow:hidden;display:block;
+  background:#fff;border:2px solid #fff;box-shadow:0 0 0 1px rgba(255,255,255,.15),0 3px 8px rgba(0,0,0,.35)
+}
+.frame-mini:before{
+  content:"";position:absolute;left:4px;right:4px;top:5px;height:36px;background:#555b59;border-radius:1px
+}
+.frame-mini.black{background:#151515;border-color:#151515}
+.frame-mini.hearts{background:#fff;color:#e96a8d}
+.frame-mini.hearts:after{content:"♥  ♥";position:absolute;left:2px;right:2px;bottom:2px;font-size:9px;text-align:center}
+.frame-mini.confetti{
+  background:
+    radial-gradient(circle at 15% 18%,#71c9e9 0 3px,transparent 4px),
+    radial-gradient(circle at 78% 15%,#f6c751 0 3px,transparent 4px),
+    radial-gradient(circle at 20% 78%,#efa0b7 0 4px,transparent 5px),
+    radial-gradient(circle at 82% 82%,#89d6b9 0 4px,transparent 5px),
+    #fff
+}
+.frame-mini.rainbow{
+  background:linear-gradient(135deg,#ff7b96 0%,#ffd66b 18%,#b8ee81 35%,#73e4db 54%,#77b7ff 72%,#c895ff 88%,#ff9cd9 100%)
+}
+.frame-mini.marble{
+  background:
+    linear-gradient(25deg,transparent 44%,#d8b981 45% 47%,transparent 48%),
+    linear-gradient(145deg,transparent 58%,#d8b981 59% 61%,transparent 62%),
+    linear-gradient(135deg,#c8e7ff,#edf7ff 45%,#a9d7f5 75%,#e8f4ff)
+}
+.frame-mini.stars{background:#fff8e8;color:#d4a21b}
+.frame-mini.stars:after{content:"★ ✦ ★";position:absolute;left:2px;right:2px;bottom:2px;font-size:8px;text-align:center}
+.frame-mini.comic{
+  background:linear-gradient(135deg,#ffd925 0 33%,#18a9e8 33% 66%,#f13e42 66%);color:#111
+}
+.frame-mini.comic:after{content:"!";position:absolute;right:2px;bottom:0;font-size:13px;font-weight:900;color:#fff;text-shadow:1px 1px #000}
+.frame-mini.airmail{
+  background:repeating-linear-gradient(135deg,#fff 0 8px,#e62532 8px 12px,#fff 12px 20px,#173e84 20px 24px,#fff 24px 32px)
+}
+.frame-mini.petra{
+  background:
+    radial-gradient(circle at 18% 20%,#efafbd 0 3px,transparent 4px),
+    radial-gradient(circle at 80% 18%,#8dd0b6 0 3px,transparent 4px),
+    radial-gradient(circle at 20% 80%,#f2c364 0 3px,transparent 4px),
+    #fff2dc;color:#d8878b
+}
+.frame-mini.petra:after{content:"PETRA";position:absolute;left:2px;right:2px;bottom:2px;font-size:6px;letter-spacing:.06em;text-align:center;font-weight:700}
+@media(max-width:520px){
+  .frame-grid{grid-template-columns:repeat(3,1fr);max-height:215px}
+  .frame-option{min-height:88px}
+}
