@@ -96,3 +96,12 @@ input[type=range]{accent-color:var(--accent)}
   .main-actions{margin-top:10px}
   .action-tile{min-height:102px}
 }
+
+.sheet-head-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+.sheet-head-actions #printA4,.sheet-head-actions #savePdfA4{border-color:var(--accent)!important}
+.sheet-head-actions #savePdfA4{background:var(--accent)!important;color:var(--accent-ink)!important}
+@media(max-width:520px){
+  .sheet-head{align-items:flex-start;gap:10px}
+  .sheet-head-actions{max-width:190px}
+  .sheet-head-actions button{padding:9px 11px!important;font-size:12px}
+}
