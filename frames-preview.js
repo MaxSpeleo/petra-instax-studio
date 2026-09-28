@@ -185,7 +185,7 @@ function getCaption(){return canvas?.getObjects().find(o=>o.name==='caption')}
 function getFrameObjects(){return canvas?.getObjects().filter(o=>o.name==='frame')||[]}
 function currentFrameStyle(){return getFrameObjects()[0]?.frameStyle||'classic'}
 function updateFrameButtons(style=currentFrameStyle()){
-  $('.frame-option').forEach(b=>b.classList.toggle('active',b.dataset.frame===style));
+  $$('.frame-option').forEach(b=>b.classList.toggle('active',b.dataset.frame===style));
 }
 function clearFrameObjects(){
   getFrameObjects().forEach(o=>canvas.remove(o));
@@ -302,11 +302,11 @@ async function loadHistory(idx){if(idx<0||idx>=history.length)return;historyLock
 $('#undoBtn').onclick=()=>loadHistory(historyIndex-1);$('#redoBtn').onclick=()=>loadHistory(historyIndex+1);
 
 function showPanel(name){
-  $$('.context-tabs button').forEach(b=>b.classList.toggle('active',b.dataset.panel===name));
+  $$$('.context-tabs button').forEach(b=>b.classList.toggle('active',b.dataset.panel===name));
   $$('.panel').forEach(p=>p.classList.toggle('active',p.dataset.panel===name));
 }
-$('.context-tabs button').forEach(b=>b.onclick=()=>showPanel(b.dataset.panel));
-$('.frame-option').forEach(b=>b.onclick=()=>{applyFrame(b.dataset.frame);showPanel('frame')});
+$$('.context-tabs button').forEach(b=>b.onclick=()=>showPanel(b.dataset.panel));
+$$('.frame-option').forEach(b=>b.onclick=()=>{applyFrame(b.dataset.frame);showPanel('frame')});
 
 $('#replacePhoto').onclick=()=>{els.file.value='';els.file.onchange=async()=>{const f=els.file.files?.[0];if(f){await addPhoto(await fileData(f));showPanel('photo')}};els.file.click()};
 $('#deletePhoto').onclick=()=>{const p=getPhoto();if(!p)return;if(confirm('Eliminare la foto da questa miniatura?')){canvas.remove(p);canvas.discardActiveObject();canvas.requestRenderAll();dirty=true;recordHistory();showPanel('text')}};
