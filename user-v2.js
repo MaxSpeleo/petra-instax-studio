@@ -10,6 +10,7 @@ const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 let slots=Array.from({length:N},()=>null), current=0, editingIndex=-1, dirty=false;
 let canvas=null, history=[], historyIndex=-1, historyLock=false;
 let touchStartX=null;
+let gesturePointers=new Map(), gestureStart=null, gestureDirty=false;
 
 const els={
   mainImg:$('#mainImg'), empty:$('#mainEmpty'), caption:$('#mainCaption'), slotNo:$('#slotNo'),
@@ -165,13 +166,117 @@ function ensureCanvas(){
     if((t&&t.name==='caption') || pointer.y>=675){
       showPanel('text');
       setTimeout(()=>{els.directCaption?.focus();els.directCaption?.select()},30);
+    }else if(pointer.x>=PHOTO.x&&pointer.x<=PHOTO.x+PHOTO.w&&pointer.y>=PHOTO.y&&pointer.y<=PHOTO.y+PHOTO.h){
+      showPanel('photo');
     }
   });
   canvas.on('object:moving',e=>{
     const o=e.target;if(o?.name==='photo'){o.left=Math.max(35,Math.min(505,o.left));o.top=Math.max(45,Math.min(675,o.top))}
   });
+  installMobilePhotoGestures();
 }
 function selectionChanged(e){const t=e.selected?.[0]||canvas.getActiveObject();if(!t)return;showPanel(t.name==='caption'?'text':'photo')}
+
+function canvasPointFromClient(clientX,clientY){
+  const el=canvas?.upperCanvasEl;if(!el)return null;
+  const r=el.getBoundingClientRect();
+  return {x:(clientX-r.left)*(W/r.width),y:(clientY-r.top)*(H/r.height)};
+}
+function pointInPhoto(p){return !!p&&p.x>=PHOTO.x&&p.x<=PHOTO.x+PHOTO.w&&p.y>=PHOTO.y&&p.y<=PHOTO.y+PHOTO.h}
+function clampPhotoPosition(p){
+  if(!p)return;
+  p.left=Math.max(35,Math.min(505,p.left));
+  p.top=Math.max(45,Math.min(675,p.top));
+}
+function updateZoomControlFromPhoto(p){
+  if(!p)return;
+  const base=Math.max(PHOTO.w/p.width,PHOTO.h/p.height);
+  const z=Math.max(1,Math.min(3,(p.scaleX||base)/base));
+  const slider=$('#zoomPhoto');if(slider)slider.value=z.toFixed(2);
+}
+function installMobilePhotoGestures(){
+  const el=canvas?.upperCanvasEl;
+  if(!el||el.dataset.petraGestures==='1')return;
+  el.dataset.petraGestures='1';
+  el.style.touchAction='none';
+
+  const distance=(a,b)=>Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
+  const center=(a,b)=>({clientX:(a.clientX+b.clientX)/2,clientY:(a.clientY+b.clientY)/2});
+
+  el.addEventListener('pointerdown',e=>{
+    if(!els.editor?.open)return;
+    const p=getPhoto();if(!p)return;
+    const logical=canvasPointFromClient(e.clientX,e.clientY);
+    if(!pointInPhoto(logical))return;
+    gesturePointers.set(e.pointerId,{clientX:e.clientX,clientY:e.clientY});
+    try{el.setPointerCapture(e.pointerId)}catch(_){}
+    const pts=[...gesturePointers.values()];
+    if(pts.length===1){
+      gestureStart={mode:'pan',last:{...pts[0]}};
+    }else if(pts.length===2){
+      const base=Math.max(PHOTO.w/p.width,PHOTO.h/p.height);
+      gestureStart={
+        mode:'pinch',
+        startDistance:Math.max(1,distance(pts[0],pts[1])),
+        startScale:p.scaleX||base,
+        lastCenter:center(pts[0],pts[1])
+      };
+    }
+    showPanel('photo');
+  },{passive:false});
+
+  el.addEventListener('pointermove',e=>{
+    if(!gesturePointers.has(e.pointerId)||!gestureStart)return;
+    gesturePointers.set(e.pointerId,{clientX:e.clientX,clientY:e.clientY});
+    const p=getPhoto();if(!p)return;
+    const pts=[...gesturePointers.values()];
+    const rect=el.getBoundingClientRect();
+    const sx=W/rect.width, sy=H/rect.height;
+
+    if(pts.length===1&&gestureStart.mode==='pan'){
+      const cur=pts[0],last=gestureStart.last;
+      p.left+=(cur.clientX-last.clientX)*sx;
+      p.top+=(cur.clientY-last.clientY)*sy;
+      gestureStart.last={...cur};
+      clampPhotoPosition(p);
+      p.setCoords();canvas.requestRenderAll();dirty=true;gestureDirty=true;
+      e.preventDefault();
+    }else if(pts.length>=2){
+      if(gestureStart.mode!=='pinch'){
+        const base=Math.max(PHOTO.w/p.width,PHOTO.h/p.height);
+        gestureStart={mode:'pinch',startDistance:Math.max(1,distance(pts[0],pts[1])),startScale:p.scaleX||base,lastCenter:center(pts[0],pts[1])};
+      }
+      const curDistance=Math.max(1,distance(pts[0],pts[1]));
+      const base=Math.max(PHOTO.w/p.width,PHOTO.h/p.height);
+      const nextScale=Math.max(base,Math.min(base*3,gestureStart.startScale*(curDistance/gestureStart.startDistance)));
+      p.scale(nextScale);
+      const curCenter=center(pts[0],pts[1]),last=gestureStart.lastCenter;
+      if(last){
+        p.left+=(curCenter.clientX-last.clientX)*sx;
+        p.top+=(curCenter.clientY-last.clientY)*sy;
+      }
+      gestureStart.lastCenter=curCenter;
+      clampPhotoPosition(p);p.setCoords();updateZoomControlFromPhoto(p);
+      canvas.requestRenderAll();dirty=true;gestureDirty=true;
+      e.preventDefault();
+    }
+  },{passive:false});
+
+  const finish=e=>{
+    if(gesturePointers.has(e.pointerId))gesturePointers.delete(e.pointerId);
+    const pts=[...gesturePointers.values()];
+    const p=getPhoto();
+    if(pts.length===1){
+      gestureStart={mode:'pan',last:{...pts[0]}};
+    }else if(pts.length===0){
+      gestureStart=null;
+      if(p)updateZoomControlFromPhoto(p);
+      if(gestureDirty){gestureDirty=false;recordHistory()}
+    }
+  };
+  el.addEventListener('pointerup',finish,{passive:true});
+  el.addEventListener('pointercancel',finish,{passive:true});
+}
 
 function baseObjects(){
   canvas.clear();canvas.backgroundColor='#f8f6f0';
@@ -342,6 +447,7 @@ async function openEditor(i,newSrc=null){
   $('#editorMeta').textContent='Mini '+(i+1)+' di '+N;
   syncDirectCaption();
   updateFrameButtons();
+  updateZoomControlFromPhoto(getPhoto());
   els.editor.showModal();showPanel(getPhoto()?'photo':'text');
 }
 function closeEditor(){
